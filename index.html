@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B3A57">
+<title>Observación HDM · HBEE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul-900:#0B3A57; --azul-700:#12608F; --azul-500:#1B7FB8; --azul-050:#E8F1F7;
+  --papel:#F4F7F9; --tinta:#16242E; --tinta-suave:#5C6F7C; --linea:#D3DEE6;
+  --ok:#1E7A5A; --no:#B4472A; --radio:10px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  background:var(--papel);color:var(--tinta);font-size:16px;line-height:1.45;
+  padding-bottom:env(safe-area-inset-bottom)}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+input,select{font-family:inherit;font-size:16px}
+.oculto{display:none !important}
+
+.portada{min-height:100dvh;background:linear-gradient(160deg,var(--azul-900),var(--azul-700));
+  display:flex;flex-direction:column;justify-content:center;padding:32px 24px}
+.portada .marca{display:flex;align-items:center;gap:14px;margin-bottom:36px}
+.portada .marca img{width:56px;height:56px;border-radius:12px;display:block}
+.portada h1{color:#fff;font-size:1.35rem;font-weight:600;margin:0;line-height:1.25}
+.portada h1 span{display:block;font-weight:400;font-size:.9rem;color:#A8CBE2;margin-top:2px}
+.tarjeta{background:#fff;border-radius:14px;padding:24px 20px 20px;box-shadow:0 18px 40px rgba(6,32,50,.28)}
+.tarjeta h2{margin:0 0 4px;font-size:1.05rem;font-weight:600}
+.tarjeta p.ayuda{margin:0 0 20px;color:var(--tinta-suave);font-size:.875rem}
+label{display:block;font-size:.8rem;color:var(--tinta-suave);margin-bottom:6px}
+input[type=text],input[type=password],select{width:100%;padding:13px 14px;border:1px solid var(--linea);
+  border-radius:var(--radio);background:#fff;color:var(--tinta)}
+input:focus,select:focus,button:focus-visible{outline:3px solid rgba(27,127,184,.35);outline-offset:1px;border-color:var(--azul-500)}
+.campo{margin-bottom:16px}
+.boton{width:100%;padding:15px;border:0;border-radius:var(--radio);background:var(--azul-700);color:#fff;font-weight:600}
+.boton:active{background:var(--azul-900)}
+.boton[disabled]{opacity:.55}
+.boton.secundario{background:#fff;color:var(--azul-700);border:1px solid var(--linea)}
+.aviso{margin-top:14px;padding:11px 13px;border-radius:var(--radio);font-size:.875rem;
+  background:#FBE9E3;color:#8C3419;border:1px solid #F0C7B8}
+
+header.barra{background:var(--azul-900);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20}
+header.barra img{width:32px;height:32px;border-radius:7px}
+header.barra .quien{flex:1;min-width:0}
+header.barra .quien b{display:block;font-size:.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header.barra .quien span{font-size:.75rem;color:#A8CBE2}
+header.barra button{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;padding:7px 11px;font-size:.8rem}
+main{padding:16px;max-width:640px;margin:0 auto}
+
+.contexto{background:var(--azul-050);border:1px solid #C3DAEA;border-radius:var(--radio);
+  padding:11px 14px;display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.contexto .datos{flex:1;font-size:.875rem;line-height:1.3}
+.contexto .datos b{font-weight:600}
+.contexto .datos em{font-style:normal;color:var(--tinta-suave);display:block;font-size:.8rem}
+.contexto button{background:#fff;border:1px solid #B6D2E4;color:var(--azul-700);border-radius:8px;padding:7px 10px;font-size:.8rem}
+
+.bloque{margin-bottom:22px}
+.bloque > h3{margin:0 0 4px;font-size:.95rem;font-weight:600}
+.bloque > p{margin:0 0 10px;font-size:.82rem;color:var(--tinta-suave)}
+.grilla{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.opcion{padding:13px 10px;border:1px solid var(--linea);background:#fff;border-radius:var(--radio);
+  text-align:center;font-size:.9rem;color:var(--tinta)}
+.opcion.elegida{background:var(--azul-700);border-color:var(--azul-700);color:#fff;font-weight:600}
+.opcion.si.elegida{background:var(--ok);border-color:var(--ok)}
+.opcion.no.elegida{background:var(--no);border-color:var(--no)}
+.momento{border:1px solid var(--linea);border-radius:12px;background:#fff;padding:14px;margin-bottom:12px}
+.momento h4{margin:0 0 2px;font-size:.92rem;font-weight:600}
+.momento p{margin:0 0 10px;font-size:.8rem;color:var(--tinta-suave)}
+.tecnica{margin-top:12px;padding-top:12px;border-top:1px dashed var(--linea)}
+.tecnica p{margin:0 0 8px;font-size:.85rem;color:var(--tinta)}
+textarea{width:100%;padding:12px;border:1px solid var(--linea);border-radius:var(--radio);
+  font-family:inherit;font-size:16px;resize:vertical;min-height:70px;background:#fff}
+.enviar{position:sticky;bottom:0;padding:14px 0 calc(14px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top,var(--papel) 72%,rgba(244,247,249,0))}
+
+.resumen{display:flex;align-items:baseline;gap:8px;margin:26px 0 10px;padding-top:20px;border-top:1px solid var(--linea)}
+.resumen b{font-size:1.6rem;font-weight:600;color:var(--azul-700)}
+.resumen span{font-size:.85rem;color:var(--tinta-suave)}
+ul.cargas{list-style:none;margin:0;padding:0}
+ul.cargas li{padding:10px 0;border-bottom:1px solid var(--linea);font-size:.85rem;display:flex;justify-content:space-between;gap:12px}
+ul.cargas li span{color:var(--tinta-suave);white-space:nowrap}
+.vacio{font-size:.85rem;color:var(--tinta-suave);padding:6px 0}
+
+/* pestañas */
+.pestanas{display:flex;gap:6px;margin-bottom:18px}
+.pestanas button{flex:1;padding:10px;border:1px solid var(--linea);background:#fff;border-radius:var(--radio);
+  font-size:.875rem;color:var(--tinta-suave)}
+.pestanas button.activa{background:var(--azul-900);border-color:var(--azul-900);color:#fff;font-weight:600}
+
+/* padrón */
+.persona{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:13px 14px;margin-bottom:10px}
+.persona .cabeza{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.persona b{font-size:.92rem;font-weight:600}
+.persona .meta{font-size:.78rem;color:var(--tinta-suave);margin-top:2px}
+.chip{font-size:.7rem;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.chip.admin{background:var(--azul-050);color:var(--azul-700);border:1px solid #C3DAEA}
+.chip.baja{background:#F3E4E0;color:#8C3419;border:1px solid #E7C6BB}
+.acciones{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.acciones button{background:#fff;border:1px solid var(--linea);color:var(--azul-700);
+  border-radius:8px;padding:7px 11px;font-size:.78rem}
+.acciones button.riesgo{color:var(--no)}
+
+#toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(12px);
+  background:var(--ok);color:#fff;padding:12px 20px;border-radius:24px;font-size:.9rem;font-weight:500;
+  box-shadow:0 8px 24px rgba(6,32,50,.3);opacity:0;pointer-events:none;
+  transition:opacity .18s ease,transform .18s ease;z-index:40;max-width:88vw;text-align:center}
+#toast.visible{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.error{background:var(--no)}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<section id="vistaLogin" class="portada">
+  <div class="marca">
+    <img src="logo.png" alt="" onerror="this.style.display='none'">
+    <h1>Observación de higiene de manos<span>Hospital del Bicentenario Esteban Echeverría</span></h1>
+  </div>
+  <div class="tarjeta">
+    <h2>Ingresar</h2>
+    <p class="ayuda">Usá tu DNI, sin puntos.</p>
+    <div class="campo">
+      <label for="inDni">DNI</label>
+      <input id="inDni" type="text" inputmode="numeric" autocomplete="username" placeholder="30123456">
+    </div>
+    <div class="campo">
+      <label for="inClave">Contraseña</label>
+      <input id="inClave" type="password" autocomplete="current-password" placeholder="La primera vez, tu DNI">
+    </div>
+    <button class="boton" id="btnEntrar">Entrar</button>
+    <div id="avisoLogin" class="aviso oculto"></div>
+  </div>
+</section>
+
+<!-- ============ CAMBIO DE CLAVE ============ -->
+<section id="vistaClave" class="portada oculto">
+  <div class="marca">
+    <img src="logo.png" alt="" onerror="this.style.display='none'">
+    <h1>Elegí tu contraseña<span>Es tu primer ingreso</span></h1>
+  </div>
+  <div class="tarjeta">
+    <h2>Contraseña nueva</h2>
+    <p class="ayuda">Mínimo 6 caracteres. No puede ser tu DNI.</p>
+    <div class="campo">
+      <label for="inClave1">Contraseña nueva</label>
+      <input id="inClave1" type="password" autocomplete="new-password">
+    </div>
+    <div class="campo">
+      <label for="inClave2">Repetila</label>
+      <input id="inClave2" type="password" autocomplete="new-password">
+    </div>
+    <button class="boton" id="btnGuardarClave">Guardar contraseña</button>
+    <div id="avisoClave" class="aviso oculto"></div>
+  </div>
+</section>
+
+<!-- ============ APP ============ -->
+<div id="vistaApp" class="oculto">
+  <header class="barra">
+    <img src="logo.png" alt="" onerror="this.style.display='none'">
+    <div class="quien">
+      <b id="nombreUsuario">—</b>
+      <span>Observación de higiene de manos</span>
+    </div>
+    <button id="btnSalir">Salir</button>
+  </header>
+
+  <main>
+    <div class="pestanas oculto" id="pestanas">
+      <button id="tabObservar" class="activa">Observar</button>
+      <button id="tabPadron">Observadores</button>
+    </div>
+
+    <!-- ---------- Observar ---------- -->
+    <section id="seccionObservar">
+      <div id="pasoContexto">
+        <div class="bloque">
+          <h3>Empezar una ronda</h3>
+          <p>Quedan fijos para todas las observaciones que cargues ahora. La fecha y la hora se registran solas.</p>
+          <div class="campo">
+            <label for="inTurno">Turno</label>
+            <select id="inTurno"></select>
+          </div>
+          <div class="campo">
+            <label for="inServicio">Servicio</label>
+            <select id="inServicio"></select>
+          </div>
+          <button class="boton" id="btnComenzar">Comenzar ronda</button>
+        </div>
+      </div>
+
+      <div id="pasoCarga" class="oculto">
+        <div class="contexto">
+          <div class="datos">
+            <b id="ctxServicio">—</b>
+            <em id="ctxFechaTurno">—</em>
+          </div>
+          <button id="btnCambiarContexto">Cambiar</button>
+        </div>
+
+        <div class="bloque">
+          <h3>Persona observada</h3>
+          <p>¿De qué área es?</p>
+          <div class="grilla" id="grillaEstamento"></div>
+        </div>
+
+        <div class="bloque">
+          <h3>Momentos observados</h3>
+          <p>Cargá al menos uno. Si no llegaste a ver un momento, dejalo sin marcar.</p>
+
+          <div class="momento" data-momento="1">
+            <h4>Momento 1</h4>
+            <p>Antes del contacto con el paciente</p>
+            <div class="grilla" data-rol="higienizo">
+              <button class="opcion si" data-valor="si">Se higienizó</button>
+              <button class="opcion no" data-valor="no">No lo hizo</button>
+            </div>
+            <div class="tecnica oculto" data-rol="tecnica-caja">
+              <p>¿La técnica fue correcta?</p>
+              <div class="grilla" data-rol="tecnica">
+                <button class="opcion si" data-valor="si">Correcta</button>
+                <button class="opcion no" data-valor="no">Incorrecta</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="momento" data-momento="5">
+            <h4>Momento 5</h4>
+            <p>Después del contacto con el entorno del paciente</p>
+            <div class="grilla" data-rol="higienizo">
+              <button class="opcion si" data-valor="si">Se higienizó</button>
+              <button class="opcion no" data-valor="no">No lo hizo</button>
+            </div>
+            <div class="tecnica oculto" data-rol="tecnica-caja">
+              <p>¿La técnica fue correcta?</p>
+              <div class="grilla" data-rol="tecnica">
+                <button class="opcion si" data-valor="si">Correcta</button>
+                <button class="opcion no" data-valor="no">Incorrecta</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bloque">
+          <h3>Observación</h3>
+          <p>Opcional. No escribas nombres ni datos que identifiquen a la persona.</p>
+          <textarea id="inObservacion" placeholder="Algo que quieras dejar anotado"></textarea>
+        </div>
+
+        <div class="enviar">
+          <button class="boton" id="btnGuardar">Guardar observación</button>
+          <div id="avisoCarga" class="aviso oculto"></div>
+        </div>
+
+        <div class="resumen">
+          <b id="contador">0</b>
+          <span id="contadorTexto">observaciones cargadas hoy</span>
+        </div>
+        <ul class="cargas" id="listaCargas"></ul>
+        <p class="vacio oculto" id="sinCargas">Todavía no cargaste ninguna hoy.</p>
+      </div>
+    </section>
+
+    <!-- ---------- Padrón (solo admin) ---------- -->
+    <section id="seccionPadron" class="oculto">
+      <div class="bloque">
+        <h3>Agregar observador</h3>
+        <p>Entra con su DNI como contraseña y la cambia en el primer ingreso.</p>
+        <div class="campo">
+          <label for="inNuevoDni">DNI</label>
+          <input id="inNuevoDni" type="text" inputmode="numeric" placeholder="30123456">
+        </div>
+        <div class="campo">
+          <label for="inNuevoNombre">Nombre y apellido</label>
+          <input id="inNuevoNombre" type="text" placeholder="María Gómez">
+        </div>
+        <button class="boton" id="btnAgregar">Agregar al padrón</button>
+      </div>
+
+      <div class="bloque">
+        <h3>Padrón</h3>
+        <p>Tocá una persona para ver qué podés hacer con su usuario.</p>
+        <div id="listaPadron"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ================= Configuración ================= */
+const SUPABASE_URL  = 'https://zughpawzljguixbpfuks.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1Z2hwYXd6bGpndWl4YnBmdWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MzA3NzksImV4cCI6MjEwNDAwNjc3OX0.UscegV-DzTDK-meFGr6J-qnNXGve6_wlBZHDUEsQpso';
+const DOMINIO = '@hbee.local';
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    persistSession: true,        // la sesión queda guardada en el dispositivo
+    autoRefreshToken: true,      // se renueva sola mientras se use
+    detectSessionInUrl: false,
+    storageKey: 'hdm-hbee-sesion'
+  }
+});
+
+/* ================= Estado ================= */
+let ficha = null;
+let ctx = { turno:null, servicio:null };
+let sel = { estamento:null, m1:null, m1t:null, m5:null, m5t:null };
+
+/* ================= Utilidades ================= */
+const $ = id => document.getElementById(id);
+const ver = (id, mostrar) => $(id).classList.toggle('oculto', !mostrar);
+
+function hoyISO(){
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+}
+function fechaLegible(iso){ const [a,m,d] = iso.split('-'); return `${d}/${m}/${a}`; }
+function mostrarAviso(id, texto){ const el=$(id); el.textContent=texto; el.classList.remove('oculto'); }
+function ocultarAviso(id){ $(id).classList.add('oculto'); }
+function toast(texto, esError){
+  const t = $('toast');
+  t.textContent = texto;
+  t.classList.toggle('error', !!esError);
+  t.classList.add('visible');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('visible'), esError ? 3200 : 1800);
+}
+
+/* ================= Login ================= */
+$('btnEntrar').addEventListener('click', entrar);
+$('inClave').addEventListener('keydown', e => { if(e.key === 'Enter') entrar(); });
+
+async function entrar(){
+  ocultarAviso('avisoLogin');
+  const dni = $('inDni').value.trim();
+  const clave = $('inClave').value;
+
+  if(!/^\d{7,8}$/.test(dni)) return mostrarAviso('avisoLogin','Escribí tu DNI sin puntos ni espacios.');
+  if(!clave) return mostrarAviso('avisoLogin','Falta la contraseña.');
+
+  $('btnEntrar').disabled = true; $('btnEntrar').textContent = 'Entrando…';
+  const { error } = await db.auth.signInWithPassword({ email: dni + DOMINIO, password: clave });
+  $('btnEntrar').disabled = false; $('btnEntrar').textContent = 'Entrar';
+
+  if(error) return mostrarAviso('avisoLogin','DNI o contraseña incorrectos. Si es tu primer ingreso, la contraseña es tu DNI.');
+  await arrancarSesion();
+}
+
+async function arrancarSesion(){
+  const { data:{ user } } = await db.auth.getUser();
+  if(!user) return pantallaLogin();
+
+  const { data, error } = await db.from('hdm_observadores')
+    .select('dni,nombre,activo,es_admin,debe_cambiar_clave')
+    .eq('id', user.id).single();
+
+  if(error || !data){
+    await db.auth.signOut();
+    pantallaLogin();
+    return mostrarAviso('avisoLogin','Tu usuario no está en el padrón. Avisale al administrador.');
+  }
+  if(!data.activo){
+    await db.auth.signOut();
+    pantallaLogin();
+    return mostrarAviso('avisoLogin','Tu usuario está desactivado.');
+  }
+
+  ficha = data;
+
+  if(data.debe_cambiar_clave){
+    ver('vistaLogin', false); ver('vistaApp', false); ver('vistaClave', true);
+    return;
+  }
+  await abrirApp();
+}
+
+function pantallaLogin(){
+  ver('vistaClave', false); ver('vistaApp', false); ver('vistaLogin', true);
+}
+
+/* ================= Cambio de clave ================= */
+$('btnGuardarClave').addEventListener('click', async () => {
+  ocultarAviso('avisoClave');
+  const c1 = $('inClave1').value, c2 = $('inClave2').value;
+
+  if(c1.length < 6)   return mostrarAviso('avisoClave','Tiene que tener al menos 6 caracteres.');
+  if(c1 !== c2)       return mostrarAviso('avisoClave','Las dos contraseñas no coinciden.');
+  if(c1 === ficha.dni) return mostrarAviso('avisoClave','No puede ser tu DNI. Elegí otra.');
+
+  $('btnGuardarClave').disabled = true;
+  const { error } = await db.auth.updateUser({ password: c1 });
+  if(error){
+    $('btnGuardarClave').disabled = false;
+    return mostrarAviso('avisoClave','No se pudo guardar: ' + error.message);
+  }
+  await db.rpc('hdm_clave_cambiada');
+  ficha.debe_cambiar_clave = false;
+  $('btnGuardarClave').disabled = false;
+  $('inClave1').value = ''; $('inClave2').value = '';
+  ver('vistaClave', false);
+  await abrirApp();
+});
+
+/* ================= App ================= */
+async function abrirApp(){
+  ver('vistaLogin', false); ver('vistaClave', false); ver('vistaApp', true);
+  $('nombreUsuario').textContent = ficha.nombre;
+  ver('pestanas', ficha.es_admin);
+  await cargarOpciones();
+  await refrescarCargas();
+}
+
+$('btnSalir').addEventListener('click', async () => {
+  await db.auth.signOut();
+  ficha = null; ctx = { turno:null, servicio:null };
+  $('inClave').value = ''; $('inDni').value = '';
+  ver('pasoCarga', false); ver('pasoContexto', true);
+  irA('observar');
+  pantallaLogin();
+});
+
+/* ---- Pestañas ---- */
+function irA(cual){
+  const esPadron = cual === 'padron';
+  ver('seccionPadron', esPadron);
+  ver('seccionObservar', !esPadron);
+  $('tabPadron').classList.toggle('activa', esPadron);
+  $('tabObservar').classList.toggle('activa', !esPadron);
+  if(esPadron) cargarPadron();
+}
+$('tabObservar').addEventListener('click', () => irA('observar'));
+$('tabPadron').addEventListener('click', () => irA('padron'));
+
+/* ---- Opciones ---- */
+async function cargarOpciones(){
+  const { data, error } = await db.from('hdm_opciones')
+    .select('categoria,valor,orden').eq('activo', true).order('orden');
+  if(error) return toast('No se pudieron cargar las opciones', true);
+
+  const porCat = c => data.filter(o => o.categoria === c);
+  const llenar = (id, items) => {
+    $(id).innerHTML = '<option value="">Elegir…</option>' +
+      items.map(i => `<option value="${i.valor}">${i.valor}</option>`).join('');
+  };
+  llenar('inTurno', porCat('turno'));
+  llenar('inServicio', porCat('servicio'));
+  $('grillaEstamento').innerHTML = porCat('estamento')
+    .map(i => `<button class="opcion" data-valor="${i.valor}">${i.valor}</button>`).join('');
+}
+
+/* ---- Contexto ---- */
+$('btnComenzar').addEventListener('click', () => {
+  const turno = $('inTurno').value, servicio = $('inServicio').value;
+  if(!turno || !servicio) return toast('Elegí turno y servicio', true);
+  ctx = { turno, servicio };
+  $('ctxServicio').textContent = servicio;
+  $('ctxFechaTurno').textContent = `${fechaLegible(hoyISO())} · turno ${turno.toLowerCase()}`;
+  ver('pasoContexto', false); ver('pasoCarga', true);
+  refrescarCargas();
+});
+$('btnCambiarContexto').addEventListener('click', () => {
+  ver('pasoCarga', false); ver('pasoContexto', true);
+});
+
+/* ---- Selección ---- */
+function elegir(contenedor, boton){
+  contenedor.querySelectorAll('.opcion').forEach(b => b.classList.remove('elegida'));
+  boton.classList.add('elegida');
+}
+$('grillaEstamento').addEventListener('click', e => {
+  const b = e.target.closest('.opcion'); if(!b) return;
+  elegir($('grillaEstamento'), b);
+  sel.estamento = b.dataset.valor;
+});
+document.querySelectorAll('.momento').forEach(caja => {
+  const n = caja.dataset.momento;
+  const cajaTecnica = caja.querySelector('[data-rol="tecnica-caja"]');
+
+  caja.querySelector('[data-rol="higienizo"]').addEventListener('click', e => {
+    const b = e.target.closest('.opcion'); if(!b) return;
+    const grilla = caja.querySelector('[data-rol="higienizo"]');
+    if(b.classList.contains('elegida')){
+      b.classList.remove('elegida');
+      sel['m'+n] = null; sel['m'+n+'t'] = null;
+      cajaTecnica.classList.add('oculto');
+      cajaTecnica.querySelectorAll('.opcion').forEach(x => x.classList.remove('elegida'));
+      return;
+    }
+    elegir(grilla, b);
+    sel['m'+n] = b.dataset.valor === 'si';
+    if(sel['m'+n]){
+      cajaTecnica.classList.remove('oculto');
+    } else {
+      cajaTecnica.classList.add('oculto');
+      cajaTecnica.querySelectorAll('.opcion').forEach(x => x.classList.remove('elegida'));
+      sel['m'+n+'t'] = null;
+    }
+  });
+
+  caja.querySelector('[data-rol="tecnica"]').addEventListener('click', e => {
+    const b = e.target.closest('.opcion'); if(!b) return;
+    elegir(caja.querySelector('[data-rol="tecnica"]'), b);
+    sel['m'+n+'t'] = b.dataset.valor === 'si';
+  });
+});
+
+/* ---- Guardar ---- */
+$('btnGuardar').addEventListener('click', async () => {
+  ocultarAviso('avisoCarga');
+  if(!sel.estamento) return mostrarAviso('avisoCarga','Falta marcar de qué área es la persona observada.');
+  if(sel.m1 === null && sel.m5 === null) return mostrarAviso('avisoCarga','Marcá al menos uno de los dos momentos.');
+  if(sel.m1 === true && sel.m1t === null) return mostrarAviso('avisoCarga','Falta indicar si la técnica del momento 1 fue correcta.');
+  if(sel.m5 === true && sel.m5t === null) return mostrarAviso('avisoCarga','Falta indicar si la técnica del momento 5 fue correcta.');
+
+  const { data:{ user } } = await db.auth.getUser();
+  if(!user){ toast('Se cerró la sesión', true); return pantallaLogin(); }
+
+  const fila = {
+    observador_id: user.id,
+    fecha: hoyISO(),
+    turno: ctx.turno,
+    servicio: ctx.servicio,
+    estamento: sel.estamento,
+    m1_higienizo: sel.m1, m1_tecnica: sel.m1t,
+    m5_higienizo: sel.m5, m5_tecnica: sel.m5t,
+    observacion: $('inObservacion').value.trim() || null
+  };
+
+  $('btnGuardar').disabled = true; $('btnGuardar').textContent = 'Guardando…';
+  const { error } = await db.from('hdm_observaciones').insert(fila);
+  $('btnGuardar').disabled = false; $('btnGuardar').textContent = 'Guardar observación';
+
+  if(error) return mostrarAviso('avisoCarga','No se pudo guardar: ' + error.message);
+
+  limpiarFormulario();
+  toast('Observación guardada');
+  refrescarCargas();
+  window.scrollTo({ top:0, behavior:'smooth' });
+});
+
+function limpiarFormulario(){
+  sel = { estamento:null, m1:null, m1t:null, m5:null, m5t:null };
+  document.querySelectorAll('.opcion').forEach(b => b.classList.remove('elegida'));
+  document.querySelectorAll('[data-rol="tecnica-caja"]').forEach(c => c.classList.add('oculto'));
+  $('inObservacion').value = '';
+}
+
+/* ---- Cargas de hoy ---- */
+async function refrescarCargas(){
+  const { data, error } = await db.from('hdm_observaciones')
+    .select('servicio,estamento,turno,created_at')
+    .eq('fecha', hoyISO())
+    .order('created_at', { ascending:false }).limit(30);
+  if(error) return;
+
+  $('contador').textContent = data.length;
+  $('contadorTexto').textContent = data.length === 1 ? 'observación cargada hoy' : 'observaciones cargadas hoy';
+  ver('sinCargas', data.length === 0);
+  $('listaCargas').innerHTML = data.map(o => {
+    const h = new Date(o.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    return `<li><div>${o.estamento} · ${o.servicio}</div><span>${h}</span></li>`;
+  }).join('');
+}
+
+/* ================= Padrón (admin) ================= */
+async function cargarPadron(){
+  const { data, error } = await db.rpc('hdm_listar_observadores');
+  if(error) return toast('No se pudo leer el padrón', true);
+
+  $('listaPadron').innerHTML = data.map(p => {
+    const chips = [
+      p.es_admin ? '<span class="chip admin">Administra</span>' : '',
+      !p.activo  ? '<span class="chip baja">Desactivado</span>' : ''
+    ].join(' ');
+    const ultima = p.ultima_carga ? `última carga ${fechaLegible(p.ultima_carga)}` : 'sin cargas todavía';
+    const pendiente = p.debe_cambiar_clave ? ' · contraseña sin cambiar' : '';
+    return `
+      <div class="persona">
+        <div class="cabeza">
+          <div>
+            <b>${p.nombre}</b>
+            <div class="meta">DNI ${p.dni} · ${p.cargas} ${p.cargas == 1 ? 'observación' : 'observaciones'} · ${ultima}${pendiente}</div>
+          </div>
+          <div>${chips}</div>
+        </div>
+        <div class="acciones">
+          <button data-accion="clave" data-dni="${p.dni}" data-nombre="${p.nombre}">Resetear contraseña</button>
+          <button data-accion="admin" data-dni="${p.dni}" data-nombre="${p.nombre}" data-valor="${!p.es_admin}">
+            ${p.es_admin ? 'Quitar administrador' : 'Hacer administrador'}
+          </button>
+          <button class="${p.activo ? 'riesgo' : ''}" data-accion="activo" data-dni="${p.dni}" data-nombre="${p.nombre}" data-valor="${!p.activo}">
+            ${p.activo ? 'Desactivar' : 'Reactivar'}
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+$('listaPadron').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-accion]'); if(!b) return;
+  const { accion, dni, nombre } = b.dataset;
+  const valor = b.dataset.valor === 'true';
+
+  const preguntas = {
+    clave : `¿Resetear la contraseña de ${nombre}? Va a volver a ser su DNI y se la va a pedir cambiar al entrar.`,
+    admin : valor ? `¿Dar permisos de administrador a ${nombre}?` : `¿Quitarle los permisos de administrador a ${nombre}?`,
+    activo: valor ? `¿Reactivar el usuario de ${nombre}?` : `¿Desactivar a ${nombre}? No va a poder entrar más, pero sus observaciones se conservan.`
+  };
+  if(!confirm(preguntas[accion])) return;
+
+  b.disabled = true;
+  let res;
+  if(accion === 'clave')  res = await db.rpc('hdm_resetear_clave', { p_dni: dni });
+  if(accion === 'admin')  res = await db.rpc('hdm_set_admin',      { p_dni: dni, p_valor: valor });
+  if(accion === 'activo') res = await db.rpc('hdm_set_activo',     { p_dni: dni, p_activo: valor });
+  b.disabled = false;
+
+  if(res.error) return toast(res.error.message, true);
+  toast(res.data || 'Listo');
+  cargarPadron();
+});
+
+$('btnAgregar').addEventListener('click', async () => {
+  const dni = $('inNuevoDni').value.trim();
+  const nombre = $('inNuevoNombre').value.trim();
+  if(!/^\d{7,8}$/.test(dni)) return toast('El DNI va sin puntos, 7 u 8 dígitos', true);
+  if(!nombre) return toast('Falta el nombre y apellido', true);
+
+  $('btnAgregar').disabled = true; $('btnAgregar').textContent = 'Agregando…';
+  const { data, error } = await db.rpc('hdm_crear_observador', { p_dni: dni, p_nombre: nombre });
+  $('btnAgregar').disabled = false; $('btnAgregar').textContent = 'Agregar al padrón';
+
+  if(error) return toast(error.message, true);
+  $('inNuevoDni').value = ''; $('inNuevoNombre').value = '';
+  toast(data || 'Observador agregado');
+  cargarPadron();
+});
+
+/* ================= Arranque ================= */
+(async () => {
+  const { data:{ session } } = await db.auth.getSession();
+  if(session) await arrancarSesion();
+})();
+</script>
+</body>
+</html>

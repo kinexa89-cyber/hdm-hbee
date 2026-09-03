@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0B3A57">
+<title>Adherencia a la higiene de manos · HBEE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul-900:#0B3A57; --azul-700:#12608F; --azul-500:#1B7FB8; --azul-050:#E8F1F7;
+  --papel:#F4F7F9; --tinta:#16242E; --tinta-suave:#5C6F7C; --linea:#D3DEE6;
+  --ok:#1E7A5A; --medio:#C08A2E; --no:#B4472A;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  background:var(--papel);color:var(--tinta);font-size:16px;line-height:1.45}
+.oculto{display:none !important}
+
+header{background:var(--azul-900);color:#fff;padding:20px 20px 22px}
+header .interno{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:14px}
+header img{width:44px;height:44px;border-radius:10px}
+header h1{margin:0;font-size:1.1rem;font-weight:600;line-height:1.25}
+header h1 span{display:block;font-weight:400;font-size:.82rem;color:#A8CBE2;margin-top:2px}
+
+main{max-width:1000px;margin:0 auto;padding:20px}
+
+/* filtros */
+.filtros{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+.filtros select{
+  padding:9px 12px;border:1px solid var(--linea);border-radius:9px;background:#fff;
+  font-family:inherit;font-size:.85rem;color:var(--tinta);flex:1 1 150px;min-width:0
+}
+.filtros select:focus{outline:3px solid rgba(27,127,184,.35);outline-offset:1px}
+
+/* hero */
+.hero{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:24px 22px;margin-bottom:18px}
+.hero .cifra{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.hero .cifra b{font-size:4rem;font-weight:600;line-height:1;color:var(--azul-700);letter-spacing:-.02em}
+.hero .cifra i{font-style:normal;font-size:1rem;color:var(--tinta-suave)}
+.hero .glosa{margin:10px 0 0;font-size:.85rem;color:var(--tinta-suave);max-width:60ch}
+.medidor{height:12px;border-radius:6px;background:var(--azul-050);margin-top:18px;overflow:hidden;position:relative}
+.medidor i{display:block;height:100%;background:var(--azul-700);border-radius:6px}
+.medidor u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--tinta);opacity:.45}
+.piedemedidor{display:flex;justify-content:space-between;font-size:.75rem;color:var(--tinta-suave);margin-top:6px}
+
+/* paneles */
+.fila{display:grid;grid-template-columns:1fr;gap:18px;margin-bottom:18px}
+@media (min-width:760px){ .fila.dos{grid-template-columns:1fr 1fr} }
+.panel{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:20px}
+.panel h2{margin:0 0 3px;font-size:.98rem;font-weight:600}
+.panel p.sub{margin:0 0 16px;font-size:.8rem;color:var(--tinta-suave)}
+
+/* barras */
+.barra{margin-bottom:13px}
+.barra .fila1{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:5px}
+.barra .fila1 span{font-size:.85rem}
+.barra .fila1 b{font-size:.85rem;font-weight:600}
+.barra .fila1 em{font-style:normal;font-size:.72rem;color:var(--tinta-suave)}
+.pista{height:9px;background:var(--azul-050);border-radius:5px;overflow:hidden}
+.pista i{display:block;height:100%;border-radius:5px;background:var(--azul-500)}
+.pista i.alto{background:var(--ok)}
+.pista i.medio{background:var(--medio)}
+.pista i.bajo{background:var(--no)}
+
+/* tendencia */
+svg.tendencia{width:100%;height:190px;display:block}
+svg.tendencia .eje{stroke:var(--linea);stroke-width:1}
+svg.tendencia .linea{fill:none;stroke:var(--azul-700);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+svg.tendencia .punto{fill:#fff;stroke:var(--azul-700);stroke-width:2.5}
+svg.tendencia .etiqueta{font-size:11px;fill:var(--tinta-suave)}
+svg.tendencia .valor{font-size:11px;fill:var(--azul-900);font-weight:600}
+
+/* tabla */
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--linea)}
+th{font-weight:600;font-size:.78rem;color:var(--tinta-suave)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+
+footer{max-width:1000px;margin:0 auto;padding:6px 20px 40px;font-size:.78rem;color:var(--tinta-suave)}
+footer p{margin:4px 0}
+.vacio{padding:40px 20px;text-align:center;color:var(--tinta-suave);font-size:.9rem}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="interno">
+    <img src="logo.png" alt="" onerror="this.style.display='none'">
+    <h1>Adherencia a la higiene de manos
+      <span>Hospital del Bicentenario Esteban Echeverría</span></h1>
+  </div>
+</header>
+
+<main>
+  <div class="filtros">
+    <select id="fPeriodo">
+      <option value="mes">Mes en curso</option>
+      <option value="90" selected>Últimos 3 meses</option>
+      <option value="anio">Año en curso</option>
+      <option value="todo">Todo el registro</option>
+    </select>
+    <select id="fServicio"><option value="">Todos los servicios</option></select>
+    <select id="fTurno"><option value="">Todos los turnos</option></select>
+    <select id="fEstamento"><option value="">Todas las áreas</option></select>
+  </div>
+
+  <div id="cargando" class="vacio">Cargando datos…</div>
+  <div id="sinDatos" class="vacio oculto">No hay observaciones registradas con esos filtros.</div>
+
+  <div id="contenido" class="oculto">
+    <section class="hero">
+      <div class="cifra">
+        <b id="adherencia">—</b>
+        <i id="adherenciaDetalle">—</i>
+      </div>
+      <p class="glosa">Porcentaje de oportunidades observadas en las que el profesional se higienizó las manos. Cada observación aporta hasta dos oportunidades: el momento previo al contacto con el paciente y el posterior al contacto con su entorno.</p>
+      <div class="medidor"><i id="medidorRelleno" style="width:0%"></i><u style="left:70%"></u></div>
+      <div class="piedemedidor"><span>0%</span><span>meta 70%</span><span>100%</span></div>
+    </section>
+
+    <div class="fila dos">
+      <section class="panel">
+        <h2>Por momento</h2>
+        <p class="sub">Dónde se pierde la adherencia</p>
+        <div id="porMomento"></div>
+      </section>
+      <section class="panel">
+        <h2>Técnica</h2>
+        <p class="sub">Sobre las oportunidades en que sí se higienizó</p>
+        <div id="porTecnica"></div>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-bottom:18px">
+      <h2>Evolución mensual</h2>
+      <p class="sub">Adherencia mes a mes</p>
+      <svg class="tendencia" id="tendencia" viewBox="0 0 700 190" preserveAspectRatio="none"></svg>
+    </section>
+
+    <div class="fila dos">
+      <section class="panel">
+        <h2>Por servicio</h2>
+        <p class="sub">Ordenado de mayor a menor adherencia</p>
+        <div id="porServicio"></div>
+      </section>
+      <section class="panel">
+        <h2>Por área</h2>
+        <p class="sub">A qué sector pertenece la persona observada</p>
+        <div id="porEstamento"></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>Por turno</h2>
+      <p class="sub">Oportunidades observadas y adherencia</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Turno</th>
+            <th class="num">Oportunidades</th>
+            <th class="num">Se higienizó</th>
+            <th class="num">Adherencia</th>
+          </tr>
+        </thead>
+        <tbody id="tablaTurno"></tbody>
+      </table>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <p id="pieActualizado">—</p>
+  <p>Los datos se actualizan solos cada minuto. Las observaciones son anónimas: no se registra la identidad de la persona observada ni de quien observa.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL  = 'https://zughpawzljguixbpfuks.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1Z2hwYXd6bGpndWl4YnBmdWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MzA3NzksImV4cCI6MjEwNDAwNjc3OX0.UscegV-DzTDK-meFGr6J-qnNXGve6_wlBZHDUEsQpso';
+const META = 70;
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth:{ persistSession:false } });
+const $ = id => document.getElementById(id);
+const ver = (id, m) => $(id).classList.toggle('oculto', !m);
+
+let filas = [];
+
+/* ---------- Descarga paginada (evita el corte silencioso en 1000) ---------- */
+async function descargar(){
+  const paso = 1000;
+  let desde = 0, todo = [];
+  while(true){
+    const { data, error } = await db.from('hdm_publico')
+      .select('fecha,periodo,turno,servicio,estamento,m1_higienizo,m1_tecnica,m5_higienizo,m5_tecnica')
+      .order('fecha', { ascending:true })
+      .range(desde, desde + paso - 1);
+    if(error){ console.error(error); break; }
+    todo = todo.concat(data);
+    if(data.length < paso) break;
+    desde += paso;
+  }
+  return todo;
+}
+
+/* ---------- Oportunidades ---------- */
+// Cada fila se despliega en hasta dos oportunidades, una por momento observado.
+function oportunidades(rows){
+  const ops = [];
+  for(const r of rows){
+    if(r.m1_higienizo !== null) ops.push({ ...r, momento:'Momento 1', higienizo:r.m1_higienizo, tecnica:r.m1_tecnica });
+    if(r.m5_higienizo !== null) ops.push({ ...r, momento:'Momento 5', higienizo:r.m5_higienizo, tecnica:r.m5_tecnica });
+  }
+  return ops;
+}
+
+function pct(parte, total){ return total ? Math.round(parte / total * 1000) / 10 : null; }
+function clase(p){ return p >= META ? 'alto' : p >= META - 20 ? 'medio' : 'bajo'; }
+
+/* ---------- Filtros ---------- */
+function filtrar(rows){
+  const per = $('fPeriodo').value;
+  const hoy = new Date();
+  let desde = null;
+
+  if(per === 'mes')  desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  if(per === 'anio') desde = new Date(hoy.getFullYear(), 0, 1);
+  if(per === '90'){ desde = new Date(hoy); desde.setDate(desde.getDate() - 90); }
+
+  const iso = desde ? new Date(desde.getTime() - desde.getTimezoneOffset()*60000).toISOString().slice(0,10) : null;
+  const s = $('fServicio').value, t = $('fTurno').value, e = $('fEstamento').value;
+
+  return rows.filter(r =>
+    (!iso || r.fecha >= iso) &&
+    (!s || r.servicio === s) &&
+    (!t || r.turno === t) &&
+    (!e || r.estamento === e)
+  );
+}
+
+/* ---------- Dibujo ---------- */
+function barras(destino, grupos){
+  $(destino).innerHTML = grupos.map(g => {
+    const p = pct(g.si, g.n);
+    return `
+      <div class="barra">
+        <div class="fila1">
+          <span>${g.nombre} <em>n=${g.n}</em></span>
+          <b>${p === null ? '—' : p + '%'}</b>
+        </div>
+        <div class="pista"><i class="${clase(p)}" style="width:${p || 0}%"></i></div>
+      </div>`;
+  }).join('') || '<p class="sub">Sin datos.</p>';
+}
+
+function agrupar(ops, campo){
+  const m = new Map();
+  for(const o of ops){
+    const k = o[campo];
+    if(!m.has(k)) m.set(k, { nombre:k, n:0, si:0 });
+    const g = m.get(k);
+    g.n++;
+    if(o.higienizo) g.si++;
+  }
+  return [...m.values()].sort((a,b) => (pct(b.si,b.n) ?? -1) - (pct(a.si,a.n) ?? -1));
+}
+
+function dibujarTendencia(ops){
+  const m = new Map();
+  for(const o of ops){
+    const k = o.periodo;
+    if(!m.has(k)) m.set(k, { n:0, si:0 });
+    const g = m.get(k); g.n++; if(o.higienizo) g.si++;
+  }
+  const serie = [...m.entries()].sort((a,b) => a[0].localeCompare(b[0])).slice(-12)
+    .map(([k,v]) => ({ mes:k, p:pct(v.si, v.n), n:v.n }));
+
+  const svg = $('tendencia');
+  const W = 700, H = 190, mx = 34, my = 26;
+  const x = i => serie.length === 1 ? W/2 : mx + i * (W - mx*2) / (serie.length - 1);
+  const y = p => H - my - (p/100) * (H - my*2);
+
+  let out = '';
+  [0,50,100].forEach(v => {
+    out += `<line class="eje" x1="${mx-6}" y1="${y(v)}" x2="${W-8}" y2="${y(v)}"></line>`;
+    out += `<text class="etiqueta" x="0" y="${y(v)+4}">${v}%</text>`;
+  });
+  out += `<line class="eje" x1="${mx-6}" y1="${y(META)}" x2="${W-8}" y2="${y(META)}" stroke-dasharray="4 4"></line>`;
+
+  if(serie.length > 1){
+    out += `<path class="linea" d="${serie.map((s,i) => `${i?'L':'M'}${x(i)},${y(s.p)}`).join(' ')}"></path>`;
+  }
+  serie.forEach((s,i) => {
+    const [a,mm] = s.mes.split('-');
+    out += `<circle class="punto" cx="${x(i)}" cy="${y(s.p)}" r="4.5"></circle>`;
+    out += `<text class="valor" x="${x(i)}" y="${y(s.p)-11}" text-anchor="middle">${s.p}%</text>`;
+    out += `<text class="etiqueta" x="${x(i)}" y="${H-6}" text-anchor="middle">${mm}/${a.slice(2)}</text>`;
+  });
+  svg.innerHTML = out;
+}
+
+function pintar(){
+  const rows = filtrar(filas);
+  const ops = oportunidades(rows);
+
+  ver('cargando', false);
+  ver('sinDatos', ops.length === 0);
+  ver('contenido', ops.length > 0);
+  if(!ops.length) return;
+
+  const si = ops.filter(o => o.higienizo).length;
+  const global = pct(si, ops.length);
+  $('adherencia').textContent = global + '%';
+  $('adherenciaDetalle').textContent =
+    `${si} de ${ops.length} oportunidades · ${rows.length} ${rows.length === 1 ? 'observación' : 'observaciones'}`;
+  $('medidorRelleno').style.width = global + '%';
+
+  barras('porMomento', agrupar(ops, 'momento').sort((a,b) => a.nombre.localeCompare(b.nombre)));
+
+  // técnica: solo entre las que se higienizaron y tienen técnica registrada
+  const conTecnica = ops.filter(o => o.higienizo && o.tecnica !== null);
+  const grupoTecnica = [
+    { nombre:'Técnica correcta', n:conTecnica.length, si:conTecnica.filter(o => o.tecnica).length }
+  ];
+  const porMomTec = ['Momento 1','Momento 5'].map(mm => {
+    const g = conTecnica.filter(o => o.momento === mm);
+    return { nombre:mm, n:g.length, si:g.filter(o => o.tecnica).length };
+  }).filter(g => g.n > 0);
+  barras('porTecnica', grupoTecnica.concat(porMomTec));
+
+  barras('porServicio',  agrupar(ops, 'servicio'));
+  barras('porEstamento', agrupar(ops, 'estamento'));
+
+  $('tablaTurno').innerHTML = agrupar(ops, 'turno').map(g => `
+    <tr>
+      <td>${g.nombre}</td>
+      <td class="num">${g.n}</td>
+      <td class="num">${g.si}</td>
+      <td class="num">${pct(g.si, g.n)}%</td>
+    </tr>`).join('');
+
+  dibujarTendencia(ops);
+
+  $('pieActualizado').textContent =
+    'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+/* ---------- Opciones de filtro ---------- */
+async function llenarFiltros(){
+  const { data } = await db.from('hdm_opciones').select('categoria,valor,orden').eq('activo', true).order('orden');
+  if(!data) return;
+  const cargar = (id, cat) => {
+    $(id).innerHTML = $(id).options[0].outerHTML +
+      data.filter(o => o.categoria === cat).map(o => `<option value="${o.valor}">${o.valor}</option>`).join('');
+  };
+  cargar('fServicio','servicio');
+  cargar('fTurno','turno');
+  cargar('fEstamento','estamento');
+}
+
+['fPeriodo','fServicio','fTurno','fEstamento'].forEach(id => $(id).addEventListener('change', pintar));
+
+async function actualizar(){
+  filas = await descargar();
+  pintar();
+}
+
+(async () => {
+  await llenarFiltros();
+  await actualizar();
+  setInterval(actualizar, 60000);
+})();
+</script>
+</body>
+</html>
