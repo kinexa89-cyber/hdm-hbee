@@ -105,6 +105,28 @@ ul.cargas li span{color:var(--tinta-suave);white-space:nowrap}
   border-radius:8px;padding:7px 11px;font-size:.78rem}
 .acciones button.riesgo{color:var(--no)}
 
+/* actividad del observador */
+.persona details{margin-top:10px;border-top:1px dashed var(--linea);padding-top:9px}
+.persona summary{font-size:.78rem;color:var(--azul-700);cursor:pointer;list-style:none}
+.persona summary::-webkit-details-marker{display:none}
+.persona summary::before{content:'▸ ';font-size:.8rem}
+.persona details[open] summary::before{content:'▾ '}
+.persona details ul{list-style:none;margin:8px 0 0;padding:0}
+.persona details li{display:flex;justify-content:space-between;font-size:.8rem;padding:4px 0;border-bottom:1px solid var(--linea)}
+.persona details li:last-child{border-bottom:0}
+.persona details li b{font-weight:600;font-variant-numeric:tabular-nums}
+
+/* zona sensible */
+.bloque.peligro{border:1px solid #E7C6BB;background:#FDF6F3;border-radius:12px;padding:15px}
+.bloque.peligro > h3{color:#8C3419}
+.boton.peligro{background:var(--no)}
+.boton.peligro:active{background:#8C3419}
+#cajaReinicio{margin-top:16px;padding-top:16px;border-top:1px dashed #E7C6BB}
+ul.reinicios{list-style:none;margin:0;padding:0}
+ul.reinicios li{padding:9px 0;border-bottom:1px solid var(--linea);font-size:.82rem;
+  display:flex;justify-content:space-between;gap:12px}
+ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
+
 #toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(12px);
   background:var(--ok);color:#fff;padding:12px 20px;border-radius:24px;font-size:.9rem;font-weight:500;
   box-shadow:0 8px 24px rgba(6,32,50,.3);opacity:0;pointer-events:none;
@@ -113,9 +135,6 @@ ul.cargas li span{color:var(--tinta-suave);white-space:nowrap}
 #toast.error{background:var(--no)}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
 </style>
-  <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0b3a57">
 </head>
 <body>
 
@@ -178,6 +197,7 @@ ul.cargas li span{color:var(--tinta-suave);white-space:nowrap}
     <div class="pestanas oculto" id="pestanas">
       <button id="tabObservar" class="activa">Observar</button>
       <button id="tabPadron">Observadores</button>
+      <button id="tabAjustes">Ajustes</button>
     </div>
 
     <!-- ---------- Observar ---------- -->
@@ -290,6 +310,44 @@ ul.cargas li span{color:var(--tinta-suave);white-space:nowrap}
         <h3>Padrón</h3>
         <p>Tocá una persona para ver qué podés hacer con su usuario.</p>
         <div id="listaPadron"></div>
+      </div>
+    </section>
+
+    <!-- ---------- Ajustes (solo admin) ---------- -->
+    <section id="seccionAjustes" class="oculto">
+      <div class="bloque">
+        <h3>Datos cargados</h3>
+        <p>Todo lo que hay registrado hoy en el sistema.</p>
+        <div class="resumen" style="margin:0;padding:0;border:0">
+          <b id="totalObs">—</b>
+          <span>observaciones cargadas en total</span>
+        </div>
+      </div>
+
+      <div class="bloque peligro">
+        <h3>Empezar de cero</h3>
+        <p>Borra todas las observaciones cargadas, de todos los observadores y de todos los servicios. El padrón, los turnos, los servicios y las áreas quedan intactos. El borrado es definitivo: no hay copia ni forma de recuperarlo.</p>
+        <button class="boton secundario" id="btnMostrarReinicio">Quiero reiniciar la app</button>
+
+        <div id="cajaReinicio" class="oculto">
+          <div class="campo">
+            <label for="inFrase">Escribí BORRAR TODO para habilitar el botón</label>
+            <input id="inFrase" type="text" autocomplete="off" autocapitalize="characters" placeholder="BORRAR TODO">
+          </div>
+          <div class="campo">
+            <label for="inClaveReinicio">Tu contraseña</label>
+            <input id="inClaveReinicio" type="password" autocomplete="current-password">
+          </div>
+          <button class="boton peligro" id="btnReiniciar" disabled>Borrar todas las observaciones</button>
+          <div id="avisoReinicio" class="aviso oculto"></div>
+        </div>
+      </div>
+
+      <div class="bloque">
+        <h3>Reinicios anteriores</h3>
+        <p>Quién puso la app en cero y cuándo.</p>
+        <ul class="reinicios" id="listaReinicios"></ul>
+        <p class="vacio oculto" id="sinReinicios">Todavía no se reinició nunca.</p>
       </div>
     </section>
   </main>
@@ -433,15 +491,18 @@ $('btnSalir').addEventListener('click', async () => {
 
 /* ---- Pestañas ---- */
 function irA(cual){
-  const esPadron = cual === 'padron';
-  ver('seccionPadron', esPadron);
-  ver('seccionObservar', !esPadron);
-  $('tabPadron').classList.toggle('activa', esPadron);
-  $('tabObservar').classList.toggle('activa', !esPadron);
-  if(esPadron) cargarPadron();
+  ver('seccionObservar', cual === 'observar');
+  ver('seccionPadron',   cual === 'padron');
+  ver('seccionAjustes',  cual === 'ajustes');
+  $('tabObservar').classList.toggle('activa', cual === 'observar');
+  $('tabPadron').classList.toggle('activa',   cual === 'padron');
+  $('tabAjustes').classList.toggle('activa',  cual === 'ajustes');
+  if(cual === 'padron')  cargarPadron();
+  if(cual === 'ajustes') cargarAjustes();
 }
 $('tabObservar').addEventListener('click', () => irA('observar'));
 $('tabPadron').addEventListener('click', () => irA('padron'));
+$('tabAjustes').addEventListener('click', () => irA('ajustes'));
 
 /* ---- Opciones ---- */
 async function cargarOpciones(){
@@ -575,26 +636,59 @@ async function refrescarCargas(){
 }
 
 /* ================= Padrón (admin) ================= */
+const MESES = ['enero','febrero','marzo','abril','mayo','junio',
+               'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function mesLegible(periodo){
+  const [a,m] = periodo.split('-');
+  return `${MESES[+m - 1]} ${a}`;
+}
+function periodoActual(){ return hoyISO().slice(0,7); }
+
+let porMes = {};   // dni -> [{ periodo, cargas }] ordenado del mes más nuevo al más viejo
+
+async function cargarActividad(){
+  porMes = {};
+  const { data, error } = await db.rpc('hdm_cargas_por_observador');
+  if(error || !data) return;
+  data.forEach(r => { (porMes[r.dni] = porMes[r.dni] || []).push({ periodo:r.periodo, cargas:r.cargas }); });
+  Object.values(porMes).forEach(a => a.sort((x,y) => y.periodo.localeCompare(x.periodo)));
+}
+
 async function cargarPadron(){
-  const { data, error } = await db.rpc('hdm_listar_observadores');
+  const [{ data, error }] = await Promise.all([
+    db.rpc('hdm_listar_observadores'),
+    cargarActividad()
+  ]);
   if(error) return toast('No se pudo leer el padrón', true);
+
+  const mesHoy = periodoActual();
 
   $('listaPadron').innerHTML = data.map(p => {
     const chips = [
       p.es_admin ? '<span class="chip admin">Administra</span>' : '',
       !p.activo  ? '<span class="chip baja">Desactivado</span>' : ''
     ].join(' ');
+    const meses = porMes[p.dni] || [];
+    const total = meses.reduce((s,m) => s + m.cargas, 0) || p.cargas || 0;
+    const esteMes = (meses.find(m => m.periodo === mesHoy) || {}).cargas || 0;
     const ultima = p.ultima_carga ? `última carga ${fechaLegible(p.ultima_carga)}` : 'sin cargas todavía';
     const pendiente = p.debe_cambiar_clave ? ' · contraseña sin cambiar' : '';
+    const detalle = meses.length ? `
+        <details>
+          <summary>Ver mes a mes</summary>
+          <ul>${meses.map(m => `<li><span>${mesLegible(m.periodo)}</span><b>${m.cargas}</b></li>`).join('')}</ul>
+        </details>` : '';
     return `
       <div class="persona">
         <div class="cabeza">
           <div>
             <b>${p.nombre}</b>
-            <div class="meta">DNI ${p.dni} · ${p.cargas} ${p.cargas == 1 ? 'observación' : 'observaciones'} · ${ultima}${pendiente}</div>
+            <div class="meta">DNI ${p.dni} · ${total} ${total == 1 ? 'observación' : 'observaciones'} en total · ${esteMes} este mes</div>
+            <div class="meta">${ultima}${pendiente}</div>
           </div>
           <div>${chips}</div>
         </div>
+        ${detalle}
         <div class="acciones">
           <button data-accion="clave" data-dni="${p.dni}" data-nombre="${p.nombre}">Resetear contraseña</button>
           <button data-accion="admin" data-dni="${p.dni}" data-nombre="${p.nombre}" data-valor="${!p.es_admin}">
@@ -646,6 +740,74 @@ $('btnAgregar').addEventListener('click', async () => {
   $('inNuevoDni').value = ''; $('inNuevoNombre').value = '';
   toast(data || 'Observador agregado');
   cargarPadron();
+});
+
+/* ================= Ajustes (admin) ================= */
+async function cargarAjustes(){
+  cerrarCajaReinicio();
+
+  const { count } = await db.from('hdm_publico').select('*', { count:'exact', head:true });
+  $('totalObs').textContent = count ?? '—';
+
+  const { data, error } = await db.rpc('hdm_historial_reinicios');
+  if(error) return;
+  ver('sinReinicios', !data.length);
+  $('listaReinicios').innerHTML = data.map(r => {
+    const f = new Date(r.creado_en).toLocaleString('es-AR',
+      { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    return `<li><div>${r.nombre || 'Administrador'} · ${r.observaciones_borradas} borradas</div><span>${f}</span></li>`;
+  }).join('');
+}
+
+function cerrarCajaReinicio(){
+  ver('cajaReinicio', false);
+  ocultarAviso('avisoReinicio');
+  $('inFrase').value = '';
+  $('inClaveReinicio').value = '';
+  $('btnReiniciar').disabled = true;
+  $('btnMostrarReinicio').textContent = 'Quiero reiniciar la app';
+}
+
+$('btnMostrarReinicio').addEventListener('click', () => {
+  const abierta = !$('cajaReinicio').classList.contains('oculto');
+  if(abierta) return cerrarCajaReinicio();
+  ver('cajaReinicio', true);
+  $('btnMostrarReinicio').textContent = 'Mejor no, cancelar';
+  $('inFrase').focus();
+});
+
+$('inFrase').addEventListener('input', () => {
+  $('btnReiniciar').disabled = $('inFrase').value.trim().toUpperCase() !== 'BORRAR TODO';
+});
+
+$('btnReiniciar').addEventListener('click', async () => {
+  ocultarAviso('avisoReinicio');
+  const clave = $('inClaveReinicio').value;
+  if(!clave) return mostrarAviso('avisoReinicio','Escribí tu contraseña para confirmar.');
+
+  const cuantas = $('totalObs').textContent;
+  if(!confirm(`Se van a borrar ${cuantas} observaciones para siempre.\n\nNo hay copia de seguridad ni forma de recuperarlas. El padrón de observadores no se toca.\n\n¿Confirmás?`)) return;
+
+  $('btnReiniciar').disabled = true; $('btnReiniciar').textContent = 'Borrando…';
+
+  // Se pide la contraseña de nuevo para que nadie reinicie con un teléfono prestado.
+  const { error: errClave } = await db.auth.signInWithPassword({ email: ficha.dni + DOMINIO, password: clave });
+  if(errClave){
+    $('btnReiniciar').disabled = false; $('btnReiniciar').textContent = 'Borrar todas las observaciones';
+    return mostrarAviso('avisoReinicio','La contraseña no es correcta.');
+  }
+
+  const { data, error } = await db.rpc('hdm_reiniciar_datos', { p_confirmacion: $('inFrase').value.trim() });
+  $('btnReiniciar').textContent = 'Borrar todas las observaciones';
+
+  if(error){
+    $('btnReiniciar').disabled = false;
+    return mostrarAviso('avisoReinicio','No se pudo reiniciar: ' + error.message);
+  }
+
+  toast(data || 'La app quedó en cero');
+  await cargarAjustes();
+  refrescarCargas();
 });
 
 /* ================= Arranque ================= */

@@ -1,8 +1,5 @@
 <!DOCTYPE html>
 <html lang="es-AR">
-  <link rel="manifest" href="manifest-tablero.json">
-<link rel="apple-touch-icon" href="tablero-icon-192.png">
-<meta name="theme-color" content="#0b3a57">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,12 +7,15 @@
 <title>Adherencia a la higiene de manos · HBEE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --azul-900:#0B3A57; --azul-700:#12608F; --azul-500:#1B7FB8; --azul-050:#E8F1F7;
   --papel:#F4F7F9; --tinta:#16242E; --tinta-suave:#5C6F7C; --linea:#D3DEE6;
-  --ok:#1E7A5A; --medio:#C08A2E; --no:#B4472A;
+  --verde:#1B8A5A; --verde-050:#E3F3EB;
+  --ambar:#C4881B; --ambar-050:#FBF0DC;
+  --rojo:#BE4025;  --rojo-050:#FAE8E3;
+  --oro:#C9A227; --plata:#9AA7B0; --bronce:#A9713F;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -39,49 +39,110 @@ main{max-width:1000px;margin:0 auto;padding:20px}
 }
 .filtros select:focus{outline:3px solid rgba(27,127,184,.35);outline-offset:1px}
 
-/* hero */
-.hero{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:24px 22px;margin-bottom:18px}
-.hero .cifra{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.hero .cifra b{font-size:4rem;font-weight:600;line-height:1;color:var(--azul-700);letter-spacing:-.02em}
-.hero .cifra i{font-style:normal;font-size:1rem;color:var(--tinta-suave)}
-.hero .glosa{margin:10px 0 0;font-size:.85rem;color:var(--tinta-suave);max-width:60ch}
-.medidor{height:12px;border-radius:6px;background:var(--azul-050);margin-top:18px;overflow:hidden;position:relative}
-.medidor i{display:block;height:100%;background:var(--azul-700);border-radius:6px}
-.medidor u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--tinta);opacity:.45}
-.piedemedidor{display:flex;justify-content:space-between;font-size:.75rem;color:var(--tinta-suave);margin-top:6px}
+/* ---------- hero con semáforo ---------- */
+.hero{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:22px;margin-bottom:18px}
+.hero .arriba{display:flex;align-items:center;gap:20px}
+.semaforo{background:#152029;border-radius:16px;padding:9px;display:flex;flex-direction:column;gap:8px;flex:0 0 auto}
+.semaforo span{width:26px;height:26px;border-radius:50%;background:#2E3E49;transition:background .25s,box-shadow .25s}
+.semaforo.bajo  span.luz-r{background:var(--rojo);  box-shadow:0 0 14px rgba(190,64,37,.85)}
+.semaforo.medio span.luz-a{background:var(--ambar); box-shadow:0 0 14px rgba(196,136,27,.85)}
+.semaforo.alto  span.luz-v{background:var(--verde); box-shadow:0 0 14px rgba(27,138,90,.85)}
+@media (prefers-reduced-motion:reduce){.semaforo span{transition:none}}
+.hero .cifra{min-width:0}
+.hero .cifra b{display:block;font-size:4rem;font-weight:700;line-height:1;letter-spacing:-.03em}
+.hero .cifra b.alto{color:var(--verde)} .hero .cifra b.medio{color:var(--ambar)} .hero .cifra b.bajo{color:var(--rojo)}
+.hero .cifra i{font-style:normal;display:block;font-size:.88rem;color:var(--tinta-suave);margin-top:6px}
+.hero .veredicto{margin:14px 0 0;font-size:.95rem;font-weight:600}
+.hero .veredicto.alto{color:var(--verde)} .hero .veredicto.medio{color:var(--ambar)} .hero .veredicto.bajo{color:var(--rojo)}
+.hero .glosa{margin:6px 0 0;font-size:.82rem;color:var(--tinta-suave);max-width:62ch}
+.medidor{height:14px;border-radius:7px;background:var(--azul-050);margin-top:18px;overflow:hidden;position:relative}
+.medidor i{display:block;height:100%;border-radius:7px;background:var(--azul-700)}
+.medidor i.alto{background:var(--verde)} .medidor i.medio{background:var(--ambar)} .medidor i.bajo{background:var(--rojo)}
+.medidor u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--tinta);opacity:.5}
+.piedemedidor{position:relative;display:flex;justify-content:space-between;font-size:.75rem;color:var(--tinta-suave);margin-top:6px}
+.piedemedidor .marcaTexto{position:absolute;transform:translateX(-100%);white-space:nowrap;color:var(--tinta)}
+@media (max-width:520px){ .hero .cifra b{font-size:3rem} .semaforo span{width:22px;height:22px} }
 
-/* paneles */
+/* ---------- paneles ---------- */
 .fila{display:grid;grid-template-columns:1fr;gap:18px;margin-bottom:18px}
 @media (min-width:760px){ .fila.dos{grid-template-columns:1fr 1fr} }
-.panel{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:20px}
+.panel{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:20px;margin-bottom:18px}
 .panel h2{margin:0 0 3px;font-size:.98rem;font-weight:600}
 .panel p.sub{margin:0 0 16px;font-size:.8rem;color:var(--tinta-suave)}
+.fila .panel{margin-bottom:0}
 
-/* barras */
+/* ---------- podio ---------- */
+.panel.competencia{padding-bottom:24px}
+.panel.competencia h2{font-size:1.15rem}
+.podio{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:end;margin:22px 0 6px}
+.lugar{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}
+.lugar .medalla{font-size:1.9rem;line-height:1}
+.lugar .nom{font-size:.82rem;font-weight:600;margin-top:6px;line-height:1.2;overflow-wrap:anywhere}
+.lugar .dato{font-size:.72rem;color:var(--tinta-suave);margin-top:2px}
+.lugar .pct{font-size:1.5rem;font-weight:700;line-height:1.1;margin-top:4px;letter-spacing:-.02em}
+.lugar .pct.alto{color:var(--verde)} .lugar .pct.medio{color:var(--ambar)} .lugar .pct.bajo{color:var(--rojo)}
+.lugar .base{width:100%;margin-top:10px;border-radius:10px 10px 0 0;display:flex;align-items:flex-start;
+  justify-content:center;padding-top:8px;color:#fff;font-weight:700;font-size:1rem}
+.lugar.p1 .base{height:104px;background:linear-gradient(180deg,#E0BC49,var(--oro))}
+.lugar.p2 .base{height:78px;background:linear-gradient(180deg,#BDC7CE,var(--plata))}
+.lugar.p3 .base{height:60px;background:linear-gradient(180deg,#C08A5F,var(--bronce))}
+@media (max-width:520px){ .lugar .pct{font-size:1.2rem} .lugar .medalla{font-size:1.5rem} }
+
+/* ---------- ranking ---------- */
+ol.ranking{list-style:none;margin:22px 0 0;padding:0;border-top:1px solid var(--linea)}
+ol.ranking li{display:flex;gap:12px;align-items:flex-start;padding:13px 0 13px 0;border-bottom:1px solid var(--linea)}
+ol.ranking li.zonaroja{background:var(--rojo-050);margin:0 -20px;padding-left:20px;padding-right:20px;border-bottom-color:#EFCFC5}
+ol.ranking .pos{flex:0 0 30px;height:30px;border-radius:50%;background:var(--azul-050);color:var(--azul-700);
+  display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:600}
+ol.ranking li.zonaroja .pos{background:var(--rojo);color:#fff}
+ol.ranking .cuerpo{flex:1;min-width:0}
+ol.ranking .l1{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+ol.ranking .l1 .nom{font-size:.9rem;font-weight:500;overflow-wrap:anywhere}
+ol.ranking .l1 b{font-size:.95rem;font-weight:700}
+ol.ranking .l1 b.alto{color:var(--verde)} ol.ranking .l1 b.medio{color:var(--ambar)} ol.ranking .l1 b.bajo{color:var(--rojo)}
+ol.ranking .detalle{font-size:.74rem;color:var(--tinta-suave);margin-top:3px}
+.avisoRoja{margin:16px 0 0;font-size:.8rem;color:var(--rojo);font-weight:500}
+.notaRanking{margin:14px 0 0;font-size:.82rem;color:var(--tinta-suave)}
+
+/* ---------- barras ---------- */
 .barra{margin-bottom:13px}
+.barra:last-child{margin-bottom:0}
 .barra .fila1{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:5px}
 .barra .fila1 span{font-size:.85rem}
 .barra .fila1 b{font-size:.85rem;font-weight:600}
+.barra .fila1 b.alto{color:var(--verde)} .barra .fila1 b.medio{color:var(--ambar)} .barra .fila1 b.bajo{color:var(--rojo)}
 .barra .fila1 em{font-style:normal;font-size:.72rem;color:var(--tinta-suave)}
 .pista{height:9px;background:var(--azul-050);border-radius:5px;overflow:hidden}
 .pista i{display:block;height:100%;border-radius:5px;background:var(--azul-500)}
-.pista i.alto{background:var(--ok)}
-.pista i.medio{background:var(--medio)}
-.pista i.bajo{background:var(--no)}
+.pista i.alto{background:var(--verde)}
+.pista i.medio{background:var(--ambar)}
+.pista i.bajo{background:var(--rojo)}
 
-/* tendencia */
-svg.tendencia{width:100%;height:190px;display:block}
+/* ---------- tendencia ---------- */
+.marcoTendencia{overflow-x:auto;-webkit-overflow-scrolling:touch}
+svg.tendencia{width:100%;min-width:560px;height:auto;display:block}
 svg.tendencia .eje{stroke:var(--linea);stroke-width:1}
+svg.tendencia .meta{stroke:var(--verde);stroke-width:1.5;stroke-dasharray:5 4;opacity:.7}
 svg.tendencia .linea{fill:none;stroke:var(--azul-700);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
-svg.tendencia .punto{fill:#fff;stroke:var(--azul-700);stroke-width:2.5}
+svg.tendencia .punto{fill:#fff;stroke-width:3}
+svg.tendencia .punto.alto{stroke:var(--verde)} svg.tendencia .punto.medio{stroke:var(--ambar)} svg.tendencia .punto.bajo{stroke:var(--rojo)}
 svg.tendencia .etiqueta{font-size:11px;fill:var(--tinta-suave)}
-svg.tendencia .valor{font-size:11px;fill:var(--azul-900);font-weight:600}
+svg.tendencia .etiqueta.meta{font-size:10px;fill:var(--verde);stroke:none}
+svg.tendencia .valor{font-size:11px;fill:var(--tinta);font-weight:600}
 
-/* tabla */
+/* ---------- tabla ---------- */
 table{width:100%;border-collapse:collapse;font-size:.85rem}
 th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--linea)}
 th{font-weight:600;font-size:.78rem;color:var(--tinta-suave)}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.pct{font-weight:700}
+td.pct.alto{color:var(--verde)} td.pct.medio{color:var(--ambar)} td.pct.bajo{color:var(--rojo)}
+
+/* ---------- referencia semáforo ---------- */
+.referencia{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;font-size:.78rem;color:var(--tinta-suave)}
+.referencia span{display:flex;align-items:center;gap:6px}
+.referencia i{width:11px;height:11px;border-radius:50%;display:block}
+.referencia i.v{background:var(--verde)} .referencia i.a{background:var(--ambar)} .referencia i.r{background:var(--rojo)}
 
 footer{max-width:1000px;margin:0 auto;padding:6px 20px 40px;font-size:.78rem;color:var(--tinta-suave)}
 footer p{margin:4px 0}
@@ -115,17 +176,42 @@ footer p{margin:4px 0}
   <div id="sinDatos" class="vacio oculto">No hay observaciones registradas con esos filtros.</div>
 
   <div id="contenido" class="oculto">
+
+    <!-- 1. Hospital -->
     <section class="hero">
-      <div class="cifra">
-        <b id="adherencia">—</b>
-        <i id="adherenciaDetalle">—</i>
+      <div class="arriba">
+        <div class="semaforo" id="semaforo">
+          <span class="luz-r"></span><span class="luz-a"></span><span class="luz-v"></span>
+        </div>
+        <div class="cifra">
+          <b id="adherencia">—</b>
+          <i id="adherenciaDetalle">—</i>
+        </div>
       </div>
-      <p class="glosa">Porcentaje de oportunidades observadas en las que el profesional se higienizó las manos. Cada observación aporta hasta dos oportunidades: el momento previo al contacto con el paciente y el posterior al contacto con su entorno.</p>
-      <div class="medidor"><i id="medidorRelleno" style="width:0%"></i><u style="left:70%"></u></div>
-      <div class="piedemedidor"><span>0%</span><span>meta 70%</span><span>100%</span></div>
+      <p class="veredicto" id="veredicto"></p>
+      <p class="glosa">Porcentaje de oportunidades observadas en las que el profesional se higienizó las manos. Cada observación aporta hasta dos oportunidades: antes del contacto con el paciente y después del contacto con su entorno.</p>
+      <div class="medidor"><i id="medidorRelleno" style="width:0%"></i><u id="marcaMeta"></u></div>
+      <div class="piedemedidor"><span>0%</span><span class="marcaTexto" id="textoMeta">meta 95%</span></div>
     </section>
 
-    <div class="fila dos">
+    <div class="referencia">
+      <span><i class="v"></i> Verde: 95% o más, meta cumplida</span>
+      <span><i class="a"></i> Amarillo: entre 80% y 94%</span>
+      <span><i class="r"></i> Rojo: menos de 80%</span>
+    </div>
+
+    <!-- 2. Ranking de servicios -->
+    <section class="panel competencia" id="panelCompetencia">
+      <h2>Ranking de servicios</h2>
+      <p class="sub" id="subRanking">Adherencia de cada servicio en el período elegido</p>
+      <div class="podio" id="podio"></div>
+      <ol class="ranking" id="ranking"></ol>
+      <p class="avisoRoja oculto" id="avisoRoja">Zona roja: los tres servicios con menor adherencia del período. Se sale de acá higienizando las manos.</p>
+      <p class="notaRanking oculto" id="notaRanking"></p>
+    </section>
+
+    <!-- 3. Resto -->
+    <div class="fila dos" style="margin-bottom:18px">
       <section class="panel">
         <h2>Por momento</h2>
         <p class="sub">Dónde se pierde la adherencia</p>
@@ -138,40 +224,34 @@ footer p{margin:4px 0}
       </section>
     </div>
 
-    <section class="panel" style="margin-bottom:18px">
+    <section class="panel">
       <h2>Evolución mensual</h2>
-      <p class="sub">Adherencia mes a mes</p>
-      <svg class="tendencia" id="tendencia" viewBox="0 0 700 190" preserveAspectRatio="none"></svg>
+      <p class="sub">Adherencia mes a mes, últimos 12 meses. La línea punteada es la meta.</p>
+      <div class="marcoTendencia"><svg class="tendencia" id="tendencia" viewBox="0 0 700 210"></svg></div>
     </section>
 
-    <div class="fila dos">
-      <section class="panel">
-        <h2>Por servicio</h2>
-        <p class="sub">Ordenado de mayor a menor adherencia</p>
-        <div id="porServicio"></div>
-      </section>
+    <div class="fila dos" style="margin-bottom:18px">
       <section class="panel">
         <h2>Por área</h2>
         <p class="sub">A qué sector pertenece la persona observada</p>
         <div id="porEstamento"></div>
       </section>
+      <section class="panel">
+        <h2>Por turno</h2>
+        <p class="sub">Oportunidades observadas y adherencia</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Turno</th>
+              <th class="num">Oportunidades</th>
+              <th class="num">Se higienizó</th>
+              <th class="num">Adherencia</th>
+            </tr>
+          </thead>
+          <tbody id="tablaTurno"></tbody>
+        </table>
+      </section>
     </div>
-
-    <section class="panel">
-      <h2>Por turno</h2>
-      <p class="sub">Oportunidades observadas y adherencia</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Turno</th>
-            <th class="num">Oportunidades</th>
-            <th class="num">Se higienizó</th>
-            <th class="num">Adherencia</th>
-          </tr>
-        </thead>
-        <tbody id="tablaTurno"></tbody>
-      </table>
-    </section>
   </div>
 </main>
 
@@ -184,7 +264,14 @@ footer p{margin:4px 0}
 <script>
 const SUPABASE_URL  = 'https://zughpawzljguixbpfuks.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1Z2hwYXd6bGpndWl4YnBmdWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MzA3NzksImV4cCI6MjEwNDAwNjc3OX0.UscegV-DzTDK-meFGr6J-qnNXGve6_wlBZHDUEsQpso';
-const META = 70;
+
+/* ===== Perillas =====
+   META            meta institucional de adherencia
+   UMBRAL_MEDIO    debajo de este número el semáforo se pone rojo
+   MIN_OPORTUNIDADES  mínimo para entrar al ranking (0 = entran todos) */
+const META = 95;
+const UMBRAL_MEDIO = 80;
+const MIN_OPORTUNIDADES = 0;
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth:{ persistSession:false } });
 const $ = id => document.getElementById(id);
@@ -221,7 +308,8 @@ function oportunidades(rows){
 }
 
 function pct(parte, total){ return total ? Math.round(parte / total * 1000) / 10 : null; }
-function clase(p){ return p >= META ? 'alto' : p >= META - 20 ? 'medio' : 'bajo'; }
+function clase(p){ return p === null ? '' : p >= META ? 'alto' : p >= UMBRAL_MEDIO ? 'medio' : 'bajo'; }
+function fmt(p){ return p === null ? '—' : p.toFixed(1).replace('.', ',') + '%'; }
 
 /* ---------- Filtros ---------- */
 function filtrar(rows){
@@ -252,7 +340,7 @@ function barras(destino, grupos){
       <div class="barra">
         <div class="fila1">
           <span>${g.nombre} <em>n=${g.n}</em></span>
-          <b>${p === null ? '—' : p + '%'}</b>
+          <b class="${clase(p)}">${fmt(p)}</b>
         </div>
         <div class="pista"><i class="${clase(p)}" style="width:${p || 0}%"></i></div>
       </div>`;
@@ -268,7 +356,62 @@ function agrupar(ops, campo){
     g.n++;
     if(o.higienizo) g.si++;
   }
-  return [...m.values()].sort((a,b) => (pct(b.si,b.n) ?? -1) - (pct(a.si,a.n) ?? -1));
+  return [...m.values()]
+    .map(g => ({ ...g, p: pct(g.si, g.n) }))
+    .sort((a,b) => (b.p ?? -1) - (a.p ?? -1) || b.n - a.n);
+}
+
+/* ---------- Podio y ranking de servicios ---------- */
+function dibujarCompetencia(ops){
+  const todos = agrupar(ops, 'servicio');
+  const rankeados = todos.filter(g => g.n >= MIN_OPORTUNIDADES);
+  const afuera    = todos.filter(g => g.n <  MIN_OPORTUNIDADES);
+
+  // Cuántos van a la zona roja: 3 si hay 6 o más servicios, 1 si hay 4 o 5, ninguno si hay 3 o menos.
+  const cantRoja = rankeados.length >= 6 ? 3 : rankeados.length >= 4 ? 1 : 0;
+  const desdeRoja = rankeados.length - cantRoja;
+
+  // Podio (1º al medio)
+  const p = rankeados.slice(0, 3);
+  const orden = [ {g:p[1], puesto:2, medalla:'🥈'}, {g:p[0], puesto:1, medalla:'🥇'}, {g:p[2], puesto:3, medalla:'🥉'} ]
+    .filter(x => x.g);
+  $('podio').innerHTML = orden.map(x => `
+    <div class="lugar p${x.puesto}">
+      <span class="medalla">${x.medalla}</span>
+      <span class="nom">${x.g.nombre}</span>
+      <span class="pct ${clase(x.g.p)}">${fmt(x.g.p)}</span>
+      <span class="dato">${x.g.si} de ${x.g.n} oportunidades</span>
+      <div class="base">${x.puesto}º</div>
+    </div>`).join('');
+
+  // Del 4º en adelante
+  const resto = rankeados.slice(3);
+  $('ranking').innerHTML = resto.map((g, i) => {
+    const puesto = i + 4;
+    const roja = cantRoja > 0 && (puesto - 1) >= desdeRoja;
+    return `
+      <li class="${roja ? 'zonaroja' : ''}">
+        <span class="pos">${puesto}</span>
+        <div class="cuerpo">
+          <div class="l1"><span class="nom">${g.nombre}</span><b class="${clase(g.p)}">${fmt(g.p)}</b></div>
+          <div class="pista"><i class="${clase(g.p)}" style="width:${g.p || 0}%"></i></div>
+          <div class="detalle">${g.si} de ${g.n} oportunidades${roja ? ' · zona roja' : ''}</div>
+        </div>
+      </li>`;
+  }).join('');
+
+  ver('avisoRoja', cantRoja === 3 && resto.length > 0);
+
+  let nota = '';
+  if(rankeados.length === 1) nota = 'Estás viendo un solo servicio. Elegí “Todos los servicios” arriba para ver el ranking completo.';
+  if(afuera.length) nota += (nota ? ' ' : '') + 'Fuera del ranking por pocas observaciones: ' +
+    afuera.map(g => `${g.nombre} (n=${g.n})`).join(', ') + '.';
+  $('notaRanking').textContent = nota;
+  ver('notaRanking', !!nota);
+
+  $('subRanking').textContent = rankeados.length === 1
+    ? 'Adherencia del servicio en el período elegido'
+    : `Adherencia de los ${rankeados.length} servicios con observaciones en el período elegido`;
 }
 
 function dibujarTendencia(ops){
@@ -282,7 +425,7 @@ function dibujarTendencia(ops){
     .map(([k,v]) => ({ mes:k, p:pct(v.si, v.n), n:v.n }));
 
   const svg = $('tendencia');
-  const W = 700, H = 190, mx = 34, my = 26;
+  const W = 700, H = 210, mx = 36, my = 30;
   const x = i => serie.length === 1 ? W/2 : mx + i * (W - mx*2) / (serie.length - 1);
   const y = p => H - my - (p/100) * (H - my*2);
 
@@ -291,15 +434,16 @@ function dibujarTendencia(ops){
     out += `<line class="eje" x1="${mx-6}" y1="${y(v)}" x2="${W-8}" y2="${y(v)}"></line>`;
     out += `<text class="etiqueta" x="0" y="${y(v)+4}">${v}%</text>`;
   });
-  out += `<line class="eje" x1="${mx-6}" y1="${y(META)}" x2="${W-8}" y2="${y(META)}" stroke-dasharray="4 4"></line>`;
+  out += `<line class="meta" x1="${mx-6}" y1="${y(META)}" x2="${W-8}" y2="${y(META)}"></line>`;
+  out += `<text class="etiqueta meta" x="${W-8}" y="${y(META)-5}" text-anchor="end">meta ${META}%</text>`;
 
   if(serie.length > 1){
     out += `<path class="linea" d="${serie.map((s,i) => `${i?'L':'M'}${x(i)},${y(s.p)}`).join(' ')}"></path>`;
   }
   serie.forEach((s,i) => {
     const [a,mm] = s.mes.split('-');
-    out += `<circle class="punto" cx="${x(i)}" cy="${y(s.p)}" r="4.5"></circle>`;
-    out += `<text class="valor" x="${x(i)}" y="${y(s.p)-11}" text-anchor="middle">${s.p}%</text>`;
+    out += `<circle class="punto ${clase(s.p)}" cx="${x(i)}" cy="${y(s.p)}" r="5"></circle>`;
+    out += `<text class="valor" x="${x(i)}" y="${y(s.p)-12}" text-anchor="middle">${s.p}%</text>`;
     out += `<text class="etiqueta" x="${x(i)}" y="${H-6}" text-anchor="middle">${mm}/${a.slice(2)}</text>`;
   });
   svg.innerHTML = out;
@@ -314,16 +458,38 @@ function pintar(){
   ver('contenido', ops.length > 0);
   if(!ops.length) return;
 
+  /* --- Hospital --- */
   const si = ops.filter(o => o.higienizo).length;
   const global = pct(si, ops.length);
-  $('adherencia').textContent = global + '%';
+  const c = clase(global);
+
+  $('adherencia').textContent = fmt(global);
+  $('adherencia').className = c;
   $('adherenciaDetalle').textContent =
     `${si} de ${ops.length} oportunidades · ${rows.length} ${rows.length === 1 ? 'observación' : 'observaciones'}`;
+  $('semaforo').className = 'semaforo ' + c;
   $('medidorRelleno').style.width = global + '%';
+  $('medidorRelleno').className = c;
+  $('marcaMeta').style.left = META + '%';
+  $('textoMeta').style.left = META + '%';
+  $('textoMeta').textContent = 'meta ' + META + '%';
 
+  const faltan = Math.max(0, Math.ceil((META/100) * ops.length - si));
+  const veredicto = c === 'alto'
+    ? '¡Meta cumplida! El hospital está en verde.'
+    : c === 'medio'
+      ? `Cerca. Faltan ${faltan} higienizaciones más para llegar al ${META}%.`
+      : `Lejos de la meta. Hoy se pierden ${ops.length - si} oportunidades de cada ${ops.length}.`;
+  $('veredicto').textContent = veredicto;
+  $('veredicto').className = 'veredicto ' + c;
+
+  /* --- Servicios --- */
+  dibujarCompetencia(ops);
+
+  /* --- Momento --- */
   barras('porMomento', agrupar(ops, 'momento').sort((a,b) => a.nombre.localeCompare(b.nombre)));
 
-  // técnica: solo entre las que se higienizaron y tienen técnica registrada
+  /* --- Técnica: solo entre las que se higienizaron y tienen técnica registrada --- */
   const conTecnica = ops.filter(o => o.higienizo && o.tecnica !== null);
   const grupoTecnica = [
     { nombre:'Técnica correcta', n:conTecnica.length, si:conTecnica.filter(o => o.tecnica).length }
@@ -334,7 +500,6 @@ function pintar(){
   }).filter(g => g.n > 0);
   barras('porTecnica', grupoTecnica.concat(porMomTec));
 
-  barras('porServicio',  agrupar(ops, 'servicio'));
   barras('porEstamento', agrupar(ops, 'estamento'));
 
   $('tablaTurno').innerHTML = agrupar(ops, 'turno').map(g => `
@@ -342,7 +507,7 @@ function pintar(){
       <td>${g.nombre}</td>
       <td class="num">${g.n}</td>
       <td class="num">${g.si}</td>
-      <td class="num">${pct(g.si, g.n)}%</td>
+      <td class="num pct ${clase(g.p)}">${fmt(g.p)}</td>
     </tr>`).join('');
 
   dibujarTendencia(ops);
