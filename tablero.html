@@ -146,6 +146,7 @@ td.pct.alto{color:var(--verde)} td.pct.medio{color:var(--ambar)} td.pct.bajo{col
 
 footer{max-width:1000px;margin:0 auto;padding:6px 20px 40px;font-size:.78rem;color:var(--tinta-suave)}
 footer p{margin:4px 0}
+footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--linea);color:var(--tinta)}
 .vacio{padding:40px 20px;text-align:center;color:var(--tinta-suave);font-size:.9rem}
 </style>
 </head>
@@ -191,13 +192,13 @@ footer p{margin:4px 0}
       <p class="veredicto" id="veredicto"></p>
       <p class="glosa">Porcentaje de oportunidades observadas en las que el profesional se higienizó las manos. Cada observación aporta hasta dos oportunidades: antes del contacto con el paciente y después del contacto con su entorno.</p>
       <div class="medidor"><i id="medidorRelleno" style="width:0%"></i><u id="marcaMeta"></u></div>
-      <div class="piedemedidor"><span>0%</span><span class="marcaTexto" id="textoMeta">meta 95%</span></div>
+      <div class="piedemedidor"><span>0%</span><span class="marcaTexto" id="textoMeta">objetivo 80%</span></div>
     </section>
 
     <div class="referencia">
-      <span><i class="v"></i> Verde: 95% o más, meta cumplida</span>
-      <span><i class="a"></i> Amarillo: entre 80% y 94%</span>
-      <span><i class="r"></i> Rojo: menos de 80%</span>
+      <span><i class="v"></i> Verde: adherencia alta, 80% o más</span>
+      <span><i class="a"></i> Amarillo: adherencia moderada, entre 50% y 79%</span>
+      <span><i class="r"></i> Rojo: adherencia baja, menos de 50%</span>
     </div>
 
     <!-- 2. Ranking de servicios -->
@@ -226,7 +227,7 @@ footer p{margin:4px 0}
 
     <section class="panel">
       <h2>Evolución mensual</h2>
-      <p class="sub">Adherencia mes a mes, últimos 12 meses. La línea punteada es la meta.</p>
+      <p class="sub">Adherencia mes a mes, últimos 12 meses. La línea punteada es el objetivo.</p>
       <div class="marcoTendencia"><svg class="tendencia" id="tendencia" viewBox="0 0 700 210"></svg></div>
     </section>
 
@@ -258,6 +259,7 @@ footer p{margin:4px 0}
 <footer>
   <p id="pieActualizado">—</p>
   <p>Los datos se actualizan solos cada minuto. Las observaciones son anónimas: no se registra la identidad de la persona observada ni de quien observa.</p>
+  <p class="credito">Elaborado por Lic. Klogo Daniel Rodriguez</p>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -266,11 +268,11 @@ const SUPABASE_URL  = 'https://zughpawzljguixbpfuks.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1Z2hwYXd6bGpndWl4YnBmdWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MzA3NzksImV4cCI6MjEwNDAwNjc3OX0.UscegV-DzTDK-meFGr6J-qnNXGve6_wlBZHDUEsQpso';
 
 /* ===== Perillas =====
-   META            meta institucional de adherencia
-   UMBRAL_MEDIO    debajo de este número el semáforo se pone rojo
+   META            adherencia alta u óptima: de acá para arriba, verde
+   UMBRAL_MEDIO    adherencia moderada: de acá hasta META, amarillo. Debajo, rojo
    MIN_OPORTUNIDADES  mínimo para entrar al ranking (0 = entran todos) */
-const META = 95;
-const UMBRAL_MEDIO = 80;
+const META = 80;
+const UMBRAL_MEDIO = 50;
 const MIN_OPORTUNIDADES = 0;
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth:{ persistSession:false } });
@@ -435,7 +437,7 @@ function dibujarTendencia(ops){
     out += `<text class="etiqueta" x="0" y="${y(v)+4}">${v}%</text>`;
   });
   out += `<line class="meta" x1="${mx-6}" y1="${y(META)}" x2="${W-8}" y2="${y(META)}"></line>`;
-  out += `<text class="etiqueta meta" x="${W-8}" y="${y(META)-5}" text-anchor="end">meta ${META}%</text>`;
+  out += `<text class="etiqueta meta" x="${W-8}" y="${y(META)-5}" text-anchor="end">objetivo ${META}%</text>`;
 
   if(serie.length > 1){
     out += `<path class="linea" d="${serie.map((s,i) => `${i?'L':'M'}${x(i)},${y(s.p)}`).join(' ')}"></path>`;
@@ -472,14 +474,14 @@ function pintar(){
   $('medidorRelleno').className = c;
   $('marcaMeta').style.left = META + '%';
   $('textoMeta').style.left = META + '%';
-  $('textoMeta').textContent = 'meta ' + META + '%';
+  $('textoMeta').textContent = 'objetivo ' + META + '%';
 
   const faltan = Math.max(0, Math.ceil((META/100) * ops.length - si));
   const veredicto = c === 'alto'
-    ? '¡Meta cumplida! El hospital está en verde.'
+    ? `¡Adherencia alta! El hospital está en verde, por encima del ${META}%.`
     : c === 'medio'
-      ? `Cerca. Faltan ${faltan} higienizaciones más para llegar al ${META}%.`
-      : `Lejos de la meta. Hoy se pierden ${ops.length - si} oportunidades de cada ${ops.length}.`;
+      ? `Adherencia moderada. Faltan ${faltan} higienizaciones más para llegar al ${META}%.`
+      : `Adherencia baja. Hoy se pierden ${ops.length - si} oportunidades de cada ${ops.length}.`;
   $('veredicto').textContent = veredicto;
   $('veredicto').className = 'veredicto ' + c;
 
