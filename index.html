@@ -211,7 +211,7 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
             <select id="inTurno"></select>
           </div>
           <div class="campo">
-            <label for="inServicio">Servicio</label>
+            <label for="inServicio">Sector</label>
             <select id="inServicio"></select>
           </div>
           <button class="boton" id="btnComenzar">Comenzar ronda</button>
@@ -229,7 +229,7 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
 
         <div class="bloque">
           <h3>Persona observada</h3>
-          <p>¿De qué área es?</p>
+          <p>¿De qué servicio es?</p>
           <div class="grilla" id="grillaEstamento"></div>
         </div>
 
@@ -524,7 +524,7 @@ async function cargarOpciones(){
 /* ---- Contexto ---- */
 $('btnComenzar').addEventListener('click', () => {
   const turno = $('inTurno').value, servicio = $('inServicio').value;
-  if(!turno || !servicio) return toast('Elegí turno y servicio', true);
+  if(!turno || !servicio) return toast('Elegí turno y sector', true);
   ctx = { turno, servicio };
   $('ctxServicio').textContent = servicio;
   $('ctxFechaTurno').textContent = `${fechaLegible(hoyISO())} · turno ${turno.toLowerCase()}`;
@@ -580,7 +580,7 @@ document.querySelectorAll('.momento').forEach(caja => {
 /* ---- Guardar ---- */
 $('btnGuardar').addEventListener('click', async () => {
   ocultarAviso('avisoCarga');
-  if(!sel.estamento) return mostrarAviso('avisoCarga','Falta marcar de qué área es la persona observada.');
+  if(!sel.estamento) return mostrarAviso('avisoCarga','Falta marcar de qué servicio es la persona observada.');
   if(sel.m1 === null && sel.m5 === null) return mostrarAviso('avisoCarga','Marcá al menos uno de los dos momentos.');
   if(sel.m1 === true && sel.m1t === null) return mostrarAviso('avisoCarga','Falta indicar si la técnica del momento 1 fue correcta.');
   if(sel.m5 === true && sel.m5t === null) return mostrarAviso('avisoCarga','Falta indicar si la técnica del momento 5 fue correcta.');

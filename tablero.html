@@ -167,9 +167,9 @@ footer p{margin:4px 0}
       <option value="anio">Año en curso</option>
       <option value="todo">Todo el registro</option>
     </select>
-    <select id="fServicio"><option value="">Todos los servicios</option></select>
+    <select id="fEstamento"><option value="">Todos los servicios</option></select>
+    <select id="fServicio"><option value="">Todos los sectores</option></select>
     <select id="fTurno"><option value="">Todos los turnos</option></select>
-    <select id="fEstamento"><option value="">Todas las áreas</option></select>
   </div>
 
   <div id="cargando" class="vacio">Cargando datos…</div>
@@ -232,9 +232,9 @@ footer p{margin:4px 0}
 
     <div class="fila dos" style="margin-bottom:18px">
       <section class="panel">
-        <h2>Por área</h2>
-        <p class="sub">A qué sector pertenece la persona observada</p>
-        <div id="porEstamento"></div>
+        <h2>Por sector</h2>
+        <p class="sub">En qué sector del hospital se observó</p>
+        <div id="porSector"></div>
       </section>
       <section class="panel">
         <h2>Por turno</h2>
@@ -363,7 +363,7 @@ function agrupar(ops, campo){
 
 /* ---------- Podio y ranking de servicios ---------- */
 function dibujarCompetencia(ops){
-  const todos = agrupar(ops, 'servicio');
+  const todos = agrupar(ops, 'estamento');
   const rankeados = todos.filter(g => g.n >= MIN_OPORTUNIDADES);
   const afuera    = todos.filter(g => g.n <  MIN_OPORTUNIDADES);
 
@@ -500,7 +500,7 @@ function pintar(){
   }).filter(g => g.n > 0);
   barras('porTecnica', grupoTecnica.concat(porMomTec));
 
-  barras('porEstamento', agrupar(ops, 'estamento'));
+  barras('porSector', agrupar(ops, 'servicio'));
 
   $('tablaTurno').innerHTML = agrupar(ops, 'turno').map(g => `
     <tr>
