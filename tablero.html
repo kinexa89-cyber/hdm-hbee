@@ -280,6 +280,7 @@ const $ = id => document.getElementById(id);
 const ver = (id, m) => $(id).classList.toggle('oculto', !m);
 
 let filas = [];
+let gruposEstamento = {};   // 'Salud mental' -> Set de especialidades, para filtrar el grupo completo
 
 /* ---------- Descarga paginada (evita el corte silencioso en 1000) ---------- */
 async function descargar(){
@@ -330,7 +331,7 @@ function filtrar(rows){
     (!iso || r.fecha >= iso) &&
     (!s || r.servicio === s) &&
     (!t || r.turno === t) &&
-    (!e || r.estamento === e)
+    (!e || (e.startsWith('grupo:') ? gruposEstamento[e.slice(6)]?.has(r.estamento) : r.estamento === e))
   );
 }
 
@@ -520,7 +521,7 @@ function pintar(){
 
 /* ---------- Opciones de filtro ---------- */
 async function llenarFiltros(){
-  const { data } = await db.from('hdm_opciones').select('categoria,valor,orden').eq('activo', true).order('orden');
+  const { data } = await db.from('hdm_opciones').select('categoria,valor,orden,grupo,etiqueta').eq('activo', true).order('orden');
   if(!data) return;
   const cargar = (id, cat) => {
     $(id).innerHTML = $(id).options[0].outerHTML +
@@ -528,7 +529,18 @@ async function llenarFiltros(){
   };
   cargar('fServicio','servicio');
   cargar('fTurno','turno');
-  cargar('fEstamento','estamento');
+  // Servicios de la persona observada: los que tienen desglose van como grupo,
+  // con una opción para ver el grupo completo y cada especialidad por separado.
+  const est = data.filter(o => o.categoria === 'estamento');
+  gruposEstamento = {};
+  est.filter(o => o.grupo).forEach(o => (gruposEstamento[o.grupo] = gruposEstamento[o.grupo] || new Set()).add(o.valor));
+  $('fEstamento').innerHTML = $('fEstamento').options[0].outerHTML +
+    est.filter(o => !o.grupo).map(o => {
+      if(!gruposEstamento[o.valor]) return `<option value="${o.valor}">${o.valor}</option>`;
+      const hijos = est.filter(h => h.grupo === o.valor)
+        .map(h => `<option value="${h.valor}">${h.valor}</option>`).join('');
+      return `<optgroup label="${o.valor}"><option value="grupo:${o.valor}">${o.valor} (todas)</option>${hijos}</optgroup>`;
+    }).join('');
 }
 
 ['fPeriodo','fServicio','fTurno','fEstamento'].forEach(id => $(id).addEventListener('change', pintar));

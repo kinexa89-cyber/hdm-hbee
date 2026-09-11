@@ -72,6 +72,9 @@ main{padding:16px;max-width:640px;margin:0 auto}
 .momento h4{margin:0 0 2px;font-size:.92rem;font-weight:600}
 .momento p{margin:0 0 10px;font-size:.8rem;color:var(--tinta-suave)}
 .tecnica{margin-top:12px;padding-top:12px;border-top:1px dashed var(--linea)}
+.subgrupo{margin-top:12px;padding:12px;border:1px dashed #B6D2E4;border-radius:var(--radio);background:var(--azul-050)}
+.subgrupo p{margin:0 0 8px;font-size:.85rem;color:var(--tinta)}
+.opcion.con-sub::after{content:' ▾';font-size:.75em;opacity:.7}
 .tecnica p{margin:0 0 8px;font-size:.85rem;color:var(--tinta)}
 textarea{width:100%;padding:12px;border:1px solid var(--linea);border-radius:var(--radio);
   font-family:inherit;font-size:16px;resize:vertical;min-height:70px;background:#fff}
@@ -236,6 +239,10 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
           <h3>Persona observada</h3>
           <p>¿De qué servicio es?</p>
           <div class="grilla" id="grillaEstamento"></div>
+          <div class="subgrupo oculto" id="cajaSub">
+            <p id="subTitulo"></p>
+            <div class="grilla" id="grillaSub"></div>
+          </div>
         </div>
 
         <div class="bloque">
@@ -380,7 +387,8 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
 /* ================= Estado ================= */
 let ficha = null;
 let ctx = { turno:null, servicio:null };
-let sel = { estamento:null, m1:null, m1t:null, m5:null, m5t:null };
+let sel = { grupo:null, estamento:null, m1:null, m1t:null, m5:null, m5t:null };
+let subEstamentos = {};   // 'Salud mental' -> [{valor, etiqueta}], 'Departamento quirúrgico' -> [...]
 
 /* ================= Utilidades ================= */
 const $ = id => document.getElementById(id);
@@ -513,7 +521,7 @@ $('tabAjustes').addEventListener('click', () => irA('ajustes'));
 /* ---- Opciones ---- */
 async function cargarOpciones(){
   const { data, error } = await db.from('hdm_opciones')
-    .select('categoria,valor,orden').eq('activo', true).order('orden');
+    .select('categoria,valor,orden,grupo,etiqueta').eq('activo', true).order('orden');
   if(error) return toast('No se pudieron cargar las opciones', true);
 
   const porCat = c => data.filter(o => o.categoria === c);
@@ -523,8 +531,16 @@ async function cargarOpciones(){
   };
   llenar('inTurno', porCat('turno'));
   llenar('inServicio', porCat('servicio'));
-  $('grillaEstamento').innerHTML = porCat('estamento')
-    .map(i => `<button class="opcion" data-valor="${i.valor}">${i.valor}</button>`).join('');
+  // Estamentos: los que no tienen grupo son botones principales;
+  // los que tienen grupo se despliegan al tocar su botón principal.
+  const est = porCat('estamento');
+  subEstamentos = {};
+  est.filter(i => i.grupo).forEach(i => (subEstamentos[i.grupo] = subEstamentos[i.grupo] || []).push(i));
+  $('grillaEstamento').innerHTML = est.filter(i => !i.grupo)
+    .map(i => {
+      const conSub = !!subEstamentos[i.valor];
+      return `<button class="opcion${conSub ? ' con-sub' : ''}" data-valor="${i.valor}">${i.etiqueta || i.valor}</button>`;
+    }).join('');
 }
 
 /* ---- Contexto ---- */
@@ -548,7 +564,28 @@ function elegir(contenedor, boton){
 }
 $('grillaEstamento').addEventListener('click', e => {
   const b = e.target.closest('.opcion'); if(!b) return;
+  const valor = b.dataset.valor;
+  const subs = subEstamentos[valor];
+  if(subs && sel.grupo === valor) return;   // ya estaba abierto: no se pierde lo elegido adentro
   elegir($('grillaEstamento'), b);
+
+  if(subs){
+    sel.grupo = valor;
+    sel.estamento = null;
+    $('subTitulo').textContent = `${valor}: ¿cuál?`;
+    $('grillaSub').innerHTML = subs
+      .map(i => `<button class="opcion" data-valor="${i.valor}">${i.etiqueta || i.valor}</button>`).join('');
+    ver('cajaSub', true);
+  } else {
+    sel.grupo = null;
+    sel.estamento = valor;
+    ver('cajaSub', false);
+    $('grillaSub').innerHTML = '';
+  }
+});
+$('grillaSub').addEventListener('click', e => {
+  const b = e.target.closest('.opcion'); if(!b) return;
+  elegir($('grillaSub'), b);
   sel.estamento = b.dataset.valor;
 });
 document.querySelectorAll('.momento').forEach(caja => {
@@ -586,6 +623,7 @@ document.querySelectorAll('.momento').forEach(caja => {
 /* ---- Guardar ---- */
 $('btnGuardar').addEventListener('click', async () => {
   ocultarAviso('avisoCarga');
+  if(sel.grupo && !sel.estamento) return mostrarAviso('avisoCarga',`Falta elegir cuál dentro de ${sel.grupo}.`);
   if(!sel.estamento) return mostrarAviso('avisoCarga','Falta marcar de qué servicio es la persona observada.');
   if(sel.m1 === null && sel.m5 === null) return mostrarAviso('avisoCarga','Marcá al menos uno de los dos momentos.');
   if(sel.m1 === true && sel.m1t === null) return mostrarAviso('avisoCarga','Falta indicar si la técnica del momento 1 fue correcta.');
@@ -618,8 +656,10 @@ $('btnGuardar').addEventListener('click', async () => {
 });
 
 function limpiarFormulario(){
-  sel = { estamento:null, m1:null, m1t:null, m5:null, m5t:null };
+  sel = { grupo:null, estamento:null, m1:null, m1t:null, m5:null, m5t:null };
   document.querySelectorAll('.opcion').forEach(b => b.classList.remove('elegida'));
+  ver('cajaSub', false);
+  $('grillaSub').innerHTML = '';
   document.querySelectorAll('[data-rol="tecnica-caja"]').forEach(c => c.classList.add('oculto'));
   $('inObservacion').value = '';
 }
