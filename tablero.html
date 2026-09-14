@@ -15,7 +15,7 @@
   --verde:#1B8A5A; --verde-050:#E3F3EB;
   --ambar:#C4881B; --ambar-050:#FBF0DC;
   --rojo:#BE4025;  --rojo-050:#FAE8E3;
-  --oro:#C9A227; --plata:#9AA7B0; --bronce:#A9713F;
+  --oro:#C9A227; --oro-050:#FAF1D4; --plata:#9AA7B0; --bronce:#A9713F;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -47,17 +47,24 @@ main{max-width:1000px;margin:0 auto;padding:20px}
 .semaforo.bajo  span.luz-r{background:var(--rojo);  box-shadow:0 0 14px rgba(190,64,37,.85)}
 .semaforo.medio span.luz-a{background:var(--ambar); box-shadow:0 0 14px rgba(196,136,27,.85)}
 .semaforo.alto  span.luz-v{background:var(--verde); box-shadow:0 0 14px rgba(27,138,90,.85)}
+.semaforo.oro   span.luz-d{background:var(--oro);   box-shadow:0 0 16px rgba(201,162,39,.95)}
+.semaforo.oro   span.luz-v{background:#1B8A5A;      opacity:.45}
 @media (prefers-reduced-motion:reduce){.semaforo span{transition:none}}
 .hero .cifra{min-width:0}
 .hero .cifra b{display:block;font-size:4rem;font-weight:700;line-height:1;letter-spacing:-.03em}
 .hero .cifra b.alto{color:var(--verde)} .hero .cifra b.medio{color:var(--ambar)} .hero .cifra b.bajo{color:var(--rojo)}
+.hero .cifra b.oro{color:var(--oro);background:linear-gradient(135deg,#E9CE6B,#C9A227 42%,#9A7A12);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+@supports not (background-clip:text){ .hero .cifra b.oro{-webkit-text-fill-color:var(--oro)} }
 .hero .cifra i{font-style:normal;display:block;font-size:.88rem;color:var(--tinta-suave);margin-top:6px}
 .hero .veredicto{margin:14px 0 0;font-size:.95rem;font-weight:600}
 .hero .veredicto.alto{color:var(--verde)} .hero .veredicto.medio{color:var(--ambar)} .hero .veredicto.bajo{color:var(--rojo)}
+.hero .veredicto.oro{color:#8A6D12}
 .hero .glosa{margin:6px 0 0;font-size:.82rem;color:var(--tinta-suave);max-width:62ch}
 .medidor{height:14px;border-radius:7px;background:var(--azul-050);margin-top:18px;overflow:hidden;position:relative}
 .medidor i{display:block;height:100%;border-radius:7px;background:var(--azul-700)}
 .medidor i.alto{background:var(--verde)} .medidor i.medio{background:var(--ambar)} .medidor i.bajo{background:var(--rojo)}
+.medidor i.oro{background:linear-gradient(90deg,var(--verde),var(--oro) 78%,#E6C95A)}
 .medidor u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--tinta);opacity:.5}
 .piedemedidor{position:relative;display:flex;justify-content:space-between;font-size:.75rem;color:var(--tinta-suave);margin-top:6px}
 .piedemedidor .marcaTexto{position:absolute;transform:translateX(-100%);white-space:nowrap;color:var(--tinta)}
@@ -81,6 +88,7 @@ main{max-width:1000px;margin:0 auto;padding:20px}
 .lugar .dato{font-size:.72rem;color:var(--tinta-suave);margin-top:2px}
 .lugar .pct{font-size:1.5rem;font-weight:700;line-height:1.1;margin-top:4px;letter-spacing:-.02em}
 .lugar .pct.alto{color:var(--verde)} .lugar .pct.medio{color:var(--ambar)} .lugar .pct.bajo{color:var(--rojo)}
+.lugar .pct.oro{color:var(--oro)}
 .lugar .base{width:100%;margin-top:10px;border-radius:10px 10px 0 0;display:flex;align-items:flex-start;
   justify-content:center;padding-top:8px;color:#fff;font-weight:700;font-size:1rem}
 .lugar.p1 .base{height:104px;background:linear-gradient(180deg,#E0BC49,var(--oro))}
@@ -100,6 +108,7 @@ ol.ranking .l1{display:flex;justify-content:space-between;align-items:baseline;g
 ol.ranking .l1 .nom{font-size:.9rem;font-weight:500;overflow-wrap:anywhere}
 ol.ranking .l1 b{font-size:.95rem;font-weight:700}
 ol.ranking .l1 b.alto{color:var(--verde)} ol.ranking .l1 b.medio{color:var(--ambar)} ol.ranking .l1 b.bajo{color:var(--rojo)}
+ol.ranking .l1 b.oro{color:var(--oro)}
 ol.ranking .detalle{font-size:.74rem;color:var(--tinta-suave);margin-top:3px}
 .avisoRoja{margin:16px 0 0;font-size:.8rem;color:var(--rojo);font-weight:500}
 .notaRanking{margin:14px 0 0;font-size:.82rem;color:var(--tinta-suave)}
@@ -111,12 +120,14 @@ ol.ranking .detalle{font-size:.74rem;color:var(--tinta-suave);margin-top:3px}
 .barra .fila1 span{font-size:.85rem}
 .barra .fila1 b{font-size:.85rem;font-weight:600}
 .barra .fila1 b.alto{color:var(--verde)} .barra .fila1 b.medio{color:var(--ambar)} .barra .fila1 b.bajo{color:var(--rojo)}
+.barra .fila1 b.oro{color:var(--oro)}
 .barra .fila1 em{font-style:normal;font-size:.72rem;color:var(--tinta-suave)}
 .pista{height:9px;background:var(--azul-050);border-radius:5px;overflow:hidden}
 .pista i{display:block;height:100%;border-radius:5px;background:var(--azul-500)}
 .pista i.alto{background:var(--verde)}
 .pista i.medio{background:var(--ambar)}
 .pista i.bajo{background:var(--rojo)}
+.pista i.oro{background:var(--oro)}
 
 /* ---------- tendencia ---------- */
 .marcoTendencia{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -126,6 +137,7 @@ svg.tendencia .meta{stroke:var(--verde);stroke-width:1.5;stroke-dasharray:5 4;op
 svg.tendencia .linea{fill:none;stroke:var(--azul-700);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
 svg.tendencia .punto{fill:#fff;stroke-width:3}
 svg.tendencia .punto.alto{stroke:var(--verde)} svg.tendencia .punto.medio{stroke:var(--ambar)} svg.tendencia .punto.bajo{stroke:var(--rojo)}
+svg.tendencia .punto.oro{stroke:var(--oro);fill:var(--oro-050)}
 svg.tendencia .etiqueta{font-size:11px;fill:var(--tinta-suave)}
 svg.tendencia .etiqueta.meta{font-size:10px;fill:var(--verde);stroke:none}
 svg.tendencia .valor{font-size:11px;fill:var(--tinta);font-weight:600}
@@ -137,12 +149,13 @@ th{font-weight:600;font-size:.78rem;color:var(--tinta-suave)}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 td.pct{font-weight:700}
 td.pct.alto{color:var(--verde)} td.pct.medio{color:var(--ambar)} td.pct.bajo{color:var(--rojo)}
+td.pct.oro{color:var(--oro)}
 
 /* ---------- referencia semáforo ---------- */
 .referencia{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;font-size:.78rem;color:var(--tinta-suave)}
 .referencia span{display:flex;align-items:center;gap:6px}
 .referencia i{width:11px;height:11px;border-radius:50%;display:block}
-.referencia i.v{background:var(--verde)} .referencia i.a{background:var(--ambar)} .referencia i.r{background:var(--rojo)}
+.referencia i.d{background:linear-gradient(135deg,#F0DA8A,#C9A227 55%,#9A7A12);box-shadow:0 0 0 1px rgba(154,122,18,.35)} .referencia i.v{background:var(--verde)} .referencia i.a{background:var(--ambar)} .referencia i.r{background:var(--rojo)}
 
 footer{max-width:1000px;margin:0 auto;padding:6px 20px 40px;font-size:.78rem;color:var(--tinta-suave)}
 footer p{margin:4px 0}
@@ -182,7 +195,7 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
     <section class="hero">
       <div class="arriba">
         <div class="semaforo" id="semaforo">
-          <span class="luz-r"></span><span class="luz-a"></span><span class="luz-v"></span>
+          <span class="luz-r"></span><span class="luz-a"></span><span class="luz-v"></span><span class="luz-d"></span>
         </div>
         <div class="cifra">
           <b id="adherencia">—</b>
@@ -196,9 +209,10 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
     </section>
 
     <div class="referencia">
-      <span><i class="v"></i> Verde: adherencia alta, 80% o más</span>
-      <span><i class="a"></i> Amarillo: adherencia moderada, entre 50% y 79%</span>
-      <span><i class="r"></i> Rojo: adherencia baja, menos de 50%</span>
+      <span><i class="d"></i> Dorado: excelencia, 95% o más</span>
+      <span><i class="v"></i> Verde: adherencia alta, de 80% a 95%</span>
+      <span><i class="a"></i> Amarillo: adherencia moderada, de 60% a 80%</span>
+      <span><i class="r"></i> Rojo: adherencia baja, menos de 60%</span>
     </div>
 
     <!-- 2. Ranking de servicios -->
@@ -268,11 +282,13 @@ const SUPABASE_URL  = 'https://zughpawzljguixbpfuks.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1Z2hwYXd6bGpndWl4YnBmdWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MzA3NzksImV4cCI6MjEwNDAwNjc3OX0.UscegV-DzTDK-meFGr6J-qnNXGve6_wlBZHDUEsQpso';
 
 /* ===== Perillas =====
-   META            adherencia alta u óptima: de acá para arriba, verde
+   UMBRAL_ORO      excelencia: de acá para arriba, dorado
+   META            adherencia alta: de acá hasta UMBRAL_ORO, verde
    UMBRAL_MEDIO    adherencia moderada: de acá hasta META, amarillo. Debajo, rojo
    MIN_OPORTUNIDADES  mínimo para entrar al ranking (0 = entran todos) */
+const UMBRAL_ORO = 95;
 const META = 80;
-const UMBRAL_MEDIO = 50;
+const UMBRAL_MEDIO = 60;
 const MIN_OPORTUNIDADES = 0;
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth:{ persistSession:false } });
@@ -311,7 +327,8 @@ function oportunidades(rows){
 }
 
 function pct(parte, total){ return total ? Math.round(parte / total * 1000) / 10 : null; }
-function clase(p){ return p === null ? '' : p >= META ? 'alto' : p >= UMBRAL_MEDIO ? 'medio' : 'bajo'; }
+function clase(p){ return p === null ? '' :
+  p >= UMBRAL_ORO ? 'oro' : p >= META ? 'alto' : p >= UMBRAL_MEDIO ? 'medio' : 'bajo'; }
 function fmt(p){ return p === null ? '—' : p.toFixed(1).replace('.', ',') + '%'; }
 
 /* ---------- Filtros ---------- */
@@ -477,12 +494,14 @@ function pintar(){
   $('textoMeta').style.left = META + '%';
   $('textoMeta').textContent = 'objetivo ' + META + '%';
 
-  const faltan = Math.max(0, Math.ceil((META/100) * ops.length - si));
-  const veredicto = c === 'alto'
-    ? `¡Adherencia alta! El hospital está en verde, por encima del ${META}%.`
-    : c === 'medio'
-      ? `Adherencia moderada. Faltan ${faltan} higienizaciones más para llegar al ${META}%.`
-      : `Adherencia baja. Hoy se pierden ${ops.length - si} oportunidades de cada ${ops.length}.`;
+  const faltanPara = u => Math.max(0, Math.ceil((u/100) * ops.length - si));
+  const veredicto = c === 'oro'
+    ? `¡Excelencia! El hospital superó el ${UMBRAL_ORO}% de adherencia.`
+    : c === 'alto'
+      ? `Adherencia alta. Faltan ${faltanPara(UMBRAL_ORO)} higienizaciones más para llegar al ${UMBRAL_ORO}% y entrar en dorado.`
+      : c === 'medio'
+        ? `Adherencia moderada. Faltan ${faltanPara(META)} higienizaciones más para llegar al ${META}%.`
+        : `Adherencia baja. Hoy se pierden ${ops.length - si} oportunidades de cada ${ops.length}.`;
   $('veredicto').textContent = veredicto;
   $('veredicto').className = 'veredicto ' + c;
 
