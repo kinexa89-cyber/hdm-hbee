@@ -161,6 +161,13 @@ footer{max-width:1000px;margin:0 auto;padding:6px 20px 40px;font-size:.78rem;col
 footer p{margin:4px 0}
 footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--linea);color:var(--tinta)}
 .vacio{padding:40px 20px;text-align:center;color:var(--tinta-suave);font-size:.9rem}
+
+/* --- Selector de indicadores --- */
+.indicadores{max-width:1000px;margin:0 auto;padding:0 20px 14px;display:flex;gap:8px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch}
+.indicadores button{flex:0 0 auto;padding:9px 16px;border-radius:999px;font-size:.88rem;
+  border:1px solid rgba(255,255,255,.35);background:transparent;color:#DCE9F2}
+.indicadores button.activo{background:#fff;border-color:#fff;color:var(--azul-900);font-weight:600}
 </style>
 </head>
 <body>
@@ -168,9 +175,10 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
 <header>
   <div class="interno">
     <img src="logo.png" alt="" onerror="this.style.display='none'">
-    <h1>Adherencia a la higiene de manos
+    <h1 id="tituloTablero">Adherencia a la higiene de manos
       <span>Hospital del Bicentenario Esteban Echeverría</span></h1>
   </div>
+  <div class="indicadores oculto" id="indicadores"></div>
 </header>
 
 <main>
@@ -204,12 +212,12 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
         </div>
       </div>
       <p class="veredicto" id="veredicto"></p>
-      <p class="glosa">Porcentaje de oportunidades observadas en las que el profesional se higienizó las manos. Cada observación aporta hasta dos oportunidades: antes del contacto con el paciente y después del contacto con su entorno.</p>
+      <p class="glosa" id="glosaHero">Porcentaje de oportunidades observadas en las que el profesional se higienizó las manos. Cada observación aporta hasta dos oportunidades: antes del contacto con el paciente y después del contacto con su entorno.</p>
       <div class="medidor"><i id="medidorRelleno" style="width:0%"></i><u id="marcaMeta"></u></div>
       <div class="piedemedidor"><span>0%</span><span class="marcaTexto" id="textoMeta">objetivo 80%</span></div>
     </section>
 
-    <div class="referencia">
+    <div class="referencia" id="referencia">
       <span><i class="d"></i> Dorado: excelencia, 95% o más</span>
       <span><i class="v"></i> Verde: adherencia alta, de 80% a 95%</span>
       <span><i class="a"></i> Amarillo: adherencia moderada, de 60% a 80%</span>
@@ -226,8 +234,15 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
       <p class="notaRanking oculto" id="notaRanking"></p>
     </section>
 
+    <!-- 2b. Ítems del bundle -->
+    <section class="panel oculto" id="panelItems" style="margin-bottom:18px">
+      <h2>Punto por punto</h2>
+      <p class="sub" id="subItems">Qué se cumple y qué no, dentro del bundle</p>
+      <div id="porItem"></div>
+    </section>
+
     <!-- 3. Resto -->
-    <div class="fila dos" style="margin-bottom:18px">
+    <div class="fila dos" id="filaHdm" style="margin-bottom:18px">
       <section class="panel">
         <h2>Por momento</h2>
         <p class="sub">Dónde se pierde la adherencia</p>
@@ -242,7 +257,7 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
 
     <section class="panel">
       <h2>Evolución mensual</h2>
-      <p class="sub">Adherencia mes a mes, últimos 12 meses. La línea punteada es el objetivo.</p>
+      <p class="sub" id="subTendencia">Adherencia mes a mes, últimos 12 meses. La línea punteada es el objetivo.</p>
       <div class="marcoTendencia"><svg class="tendencia" id="tendencia" viewBox="0 0 700 210"></svg></div>
     </section>
 
@@ -254,14 +269,14 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
       </section>
       <section class="panel">
         <h2>Por turno</h2>
-        <p class="sub">Oportunidades observadas y adherencia</p>
+        <p class="sub" id="subTurno">Oportunidades observadas y adherencia</p>
         <table>
           <thead>
             <tr>
               <th>Turno</th>
-              <th class="num">Oportunidades</th>
-              <th class="num">Se higienizó</th>
-              <th class="num">Adherencia</th>
+              <th class="num" id="thTotal">Oportunidades</th>
+              <th class="num" id="thBien">Se higienizó</th>
+              <th class="num" id="thPct">Adherencia</th>
             </tr>
           </thead>
           <tbody id="tablaTurno"></tbody>
@@ -273,6 +288,14 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
       <h2>Por cama</h2>
       <p class="sub" id="subCamas">Solo las camas con suficientes oportunidades observadas</p>
       <div id="porCama"></div>
+    </section>
+
+    <!-- Cruce con higiene de manos, solo para bundles con cama -->
+    <section class="panel oculto" id="panelCruce" style="margin-bottom:18px">
+      <h2>Higiene de manos en estas camas</h2>
+      <p class="sub" id="subCruce">—</p>
+      <div id="porCruce"></div>
+      <p class="notaRanking" id="notaCruce"></p>
     </section>
   </div>
 </main>
@@ -293,30 +316,37 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
    META            adherencia alta: de acá hasta UMBRAL_ORO, verde
    UMBRAL_MEDIO    adherencia moderada: de acá hasta META, amarillo. Debajo, rojo
    MIN_OPORTUNIDADES  mínimo para entrar al ranking (0 = entran todos) */
-const UMBRAL_ORO = 95;
-const META = 80;
-const UMBRAL_MEDIO = 60;
+/* Son los valores por defecto: cada indicador puede traer los suyos desde la base. */
+let UMBRAL_ORO = 95;
+let META = 80;
+let UMBRAL_MEDIO = 60;
 const MIN_OPORTUNIDADES = 0;
 /* MIN_OPORT_CAMA  mínimo de oportunidades para que una cama se muestre en "Por cama".
    Con pocas observaciones el porcentaje de una cama es puro ruido. */
 const MIN_OPORT_CAMA = 10;
+/* MIN_CONTROLES_CAMA  lo mismo, para los bundles: un control ya mira todo el bundle,
+   así que hacen falta menos que oportunidades sueltas para que el número signifique algo. */
+const MIN_CONTROLES_CAMA = 5;
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth:{ persistSession:false } });
 const $ = id => document.getElementById(id);
 const ver = (id, m) => $(id).classList.toggle('oculto', !m);
 
-let filas = [];
+let filas = [];             // observaciones de higiene de manos
+let registros = [];         // controles del bundle elegido, uno por fila
+let itemsRegistro = [];     // los mismos controles, abiertos ítem por ítem
+let catalogo = [];          // indicadores activos
+let bundle = null;          // el que se está mirando
 let gruposEstamento = {};   // 'Salud mental' -> Set de especialidades, para filtrar el grupo completo
 
 /* ---------- Descarga paginada (evita el corte silencioso en 1000) ---------- */
-async function descargar(){
+async function bajarTodo(tabla, columnas, filtro){
   const paso = 1000;
   let desde = 0, todo = [];
   while(true){
-    const { data, error } = await db.from('hdm_publico')
-      .select('fecha,periodo,turno,servicio,cama,estamento,m1_higienizo,m1_tecnica,m5_higienizo,m5_tecnica')
-      .order('fecha', { ascending:true })
-      .range(desde, desde + paso - 1);
+    let q = db.from(tabla).select(columnas).order('fecha', { ascending:true });
+    if(filtro) q = q.eq(filtro.columna, filtro.valor);
+    const { data, error } = await q.range(desde, desde + paso - 1);
     if(error){ console.error(error); break; }
     todo = todo.concat(data);
     if(data.length < paso) break;
@@ -324,6 +354,9 @@ async function descargar(){
   }
   return todo;
 }
+
+const descargar = () => bajarTodo('hdm_publico',
+  'fecha,periodo,turno,servicio,cama,estamento,m1_higienizo,m1_tecnica,m5_higienizo,m5_tecnica');
 
 /* ---------- Oportunidades ---------- */
 // Cada fila se despliega en hasta dos oportunidades, una por momento observado.
@@ -334,6 +367,13 @@ function oportunidades(rows){
     if(r.m5_higienizo !== null) ops.push({ ...r, momento:'Momento 5', higienizo:r.m5_higienizo, tecnica:r.m5_tecnica });
   }
   return ops;
+}
+
+/* Cada control se convierte en una "oportunidad" con el mismo formato que usa
+   higiene de manos, así todos los gráficos sirven para los dos sin tocarlos.
+   higienizo = el bundle se cumplió entero (regla de todo o nada). */
+function comoOportunidades(regs){
+  return regs.map(r => ({ ...r, higienizo: r.cumple }));
 }
 
 function pct(parte, total){ return total ? Math.round(parte / total * 1000) / 10 : null; }
@@ -352,8 +392,9 @@ function filtrar(rows){
   if(per === '90'){ desde = new Date(hoy); desde.setDate(desde.getDate() - 90); }
 
   const iso = desde ? new Date(desde.getTime() - desde.getTimezoneOffset()*60000).toISOString().slice(0,10) : null;
-  const s = $('fServicio').value, t = $('fTurno').value, e = $('fEstamento').value;
-  const cm = $('fCama').value;
+  const s = $('fServicio').value, t = $('fTurno').value, cm = $('fCama').value;
+  // El servicio de la persona observada solo existe en higiene de manos.
+  const e = bundle && !bundle.propio ? '' : $('fEstamento').value;
 
   return rows.filter(r =>
     (!iso || r.fecha >= iso) &&
@@ -502,7 +543,79 @@ function dibujarTendencia(ops){
   svg.innerHTML = out;
 }
 
+/* ---------- Indicadores ---------- */
+async function cargarCatalogo(){
+  const { data } = await db.from('hdm_bundles')
+    .select('clave,nombre,descripcion,propio,pide_cama,umbral_medio,meta,umbral_oro,orden')
+    .eq('activo', true).order('orden');
+  catalogo = data || [];
+  if(!catalogo.length) return;
+
+  ver('indicadores', catalogo.length > 1);
+  $('indicadores').innerHTML = catalogo
+    .map(b => `<button data-clave="${b.clave}">${b.nombre}</button>`).join('');
+
+  // Se puede compartir el link de un indicador: tablero.html#navm
+  const pedido = location.hash.replace('#', '');
+  await elegirBundle(catalogo.find(b => b.clave === pedido) ? pedido : catalogo[0].clave);
+}
+
+$('indicadores').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  elegirBundle(b.dataset.clave);
+});
+
+async function elegirBundle(clave){
+  bundle = catalogo.find(b => b.clave === clave);
+  if(!bundle) return;
+  history.replaceState(null, '', '#' + clave);
+
+  [...$('indicadores').children].forEach(b =>
+    b.classList.toggle('activo', b.dataset.clave === clave));
+
+  UMBRAL_MEDIO = Number(bundle.umbral_medio);
+  META         = Number(bundle.meta);
+  UMBRAL_ORO   = Number(bundle.umbral_oro);
+  $('referencia').innerHTML =
+    `<span><i class="d"></i> Dorado: excelencia, ${UMBRAL_ORO}% o más</span>` +
+    `<span><i class="v"></i> Verde: alto, de ${META}% a ${UMBRAL_ORO}%</span>` +
+    `<span><i class="a"></i> Amarillo: moderado, de ${UMBRAL_MEDIO}% a ${META}%</span>` +
+    `<span><i class="r"></i> Rojo: bajo, menos de ${UMBRAL_MEDIO}%</span>`;
+
+  document.title = bundle.nombre + ' · HBEE';
+  $('tituloTablero').innerHTML =
+    (bundle.propio ? 'Adherencia a la higiene de manos' : bundle.nombre) +
+    '<span>Hospital del Bicentenario Esteban Echeverría</span>';
+
+  // Secciones que solo tienen sentido en higiene de manos.
+  ver('panelCompetencia', bundle.propio);
+  ver('filaHdm',          bundle.propio);
+  ver('fEstamento',       bundle.propio);
+  ver('panelItems',      !bundle.propio);
+  ver('panelCruce',      !bundle.propio && bundle.pide_cama);
+  $('thTotal').textContent = bundle.propio ? 'Oportunidades' : 'Controles';
+  $('thBien').textContent  = bundle.propio ? 'Se higienizó'  : 'Cumplen';
+  $('thPct').textContent   = bundle.propio ? 'Adherencia'    : 'Cumplimiento';
+  $('subTurno').textContent = bundle.propio
+    ? 'Oportunidades observadas y adherencia'
+    : 'Controles cargados y cumplimiento del bundle';
+  $('glosaHero').textContent = bundle.propio
+    ? 'Porcentaje de oportunidades observadas en las que el profesional se higienizó las manos. Cada observación aporta hasta dos oportunidades: antes del contacto con el paciente y después del contacto con su entorno.'
+    : 'Porcentaje de controles en los que se cumplieron todos los puntos del bundle. Alcanza con que falle uno para que el control entero cuente como no cumplido. Los puntos que no corresponden a ese paciente no suman ni restan.';
+  $('sinDatos').textContent = bundle.propio
+    ? 'No hay observaciones registradas con esos filtros.'
+    : 'No hay controles registrados con esos filtros.';
+  $('subTendencia').textContent = (bundle.propio ? 'Adherencia' : 'Cumplimiento del bundle') +
+    ' mes a mes, últimos 12 meses. La línea punteada es el objetivo.';
+
+  ver('cargando', true); ver('contenido', false); ver('sinDatos', false);
+  await actualizar();
+}
+
 function pintar(){
+  if(!bundle) return;
+  if(!bundle.propio) return pintarBundle();
+
   const rows = filtrar(filas);
   const ops = oportunidades(rows);
 
@@ -557,24 +670,7 @@ function pintar(){
 
   barras('porSector', agrupar(ops, 'servicio'));
 
-  /* --- Camas --- */
-  const porCama = agrupar(ops.filter(o => o.cama), 'cama')
-    .filter(g => g.n >= MIN_OPORT_CAMA);
-  if(porCama.length){
-    // Sin sector elegido la lista se vuelve interminable, así que se muestran
-    // las puntas y se invita a filtrar por sector para ver el detalle.
-    const recortar = !$('fServicio').value && porCama.length > 12;
-    const lista = recortar ? porCama.slice(0, 6).concat(porCama.slice(-6)) : porCama;
-    $('subCamas').textContent = recortar
-      ? `Las 6 camas con mejor adherencia y las 6 con peor, de ${porCama.length}. Elegí un sector para ver todas sus camas.`
-      : `Camas con al menos ${MIN_OPORT_CAMA} oportunidades observadas, de mayor a menor adherencia`;
-    barras('porCama', lista);
-  } else {
-    $('subCamas').textContent = 'Comparación de la adherencia entre camas';
-    $('porCama').innerHTML =
-      `<p class="sub">Todavía ninguna cama llega a ${MIN_OPORT_CAMA} oportunidades observadas. ` +
-      `Va a aparecer sola cuando se carguen más observaciones.</p>`;
-  }
+  pintarCamas(ops);
 
   $('tablaTurno').innerHTML = agrupar(ops, 'turno').map(g => `
     <tr>
@@ -588,6 +684,137 @@ function pintar(){
 
   $('pieActualizado').textContent =
     'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+/* ---------- Camas (sirve para los dos indicadores) ---------- */
+function pintarCamas(ops){
+  const minimo = bundle && bundle.propio ? MIN_OPORT_CAMA : MIN_CONTROLES_CAMA;
+  const que = bundle && bundle.propio ? 'oportunidades observadas' : 'controles cargados';
+  const porCama = agrupar(ops.filter(o => o.cama), 'cama').filter(g => g.n >= minimo);
+
+  if(porCama.length){
+    // Sin sector elegido la lista se vuelve interminable, así que se muestran
+    // las puntas y se invita a filtrar por sector para ver el detalle.
+    const recortar = !$('fServicio').value && porCama.length > 12;
+    const lista = recortar ? porCama.slice(0, 6).concat(porCama.slice(-6)) : porCama;
+    $('subCamas').textContent = recortar
+      ? `Las 6 camas con mejor resultado y las 6 con peor, de ${porCama.length}. Elegí un sector para ver todas sus camas.`
+      : `Camas con al menos ${minimo} ${que}, de mayor a menor`;
+    barras('porCama', lista);
+  } else {
+    $('subCamas').textContent = 'Comparación entre camas';
+    $('porCama').innerHTML =
+      `<p class="sub">Todavía ninguna cama llega a ${minimo} ${que}. ` +
+      `Va a aparecer sola cuando se cargue más.</p>`;
+  }
+}
+
+/* ---------- Pintado de un bundle (NAVM y los que vengan) ---------- */
+function pintarBundle(){
+  const regs = filtrar(registros);
+  const ops = comoOportunidades(regs);
+
+  ver('cargando', false);
+  ver('sinDatos', ops.length === 0);
+  ver('contenido', ops.length > 0);
+  if(!ops.length) return;
+
+  /* --- Cumplimiento del bundle --- */
+  const si = ops.filter(o => o.higienizo).length;
+  const global = pct(si, ops.length);
+  const c = clase(global);
+
+  $('adherencia').textContent = fmt(global);
+  $('adherencia').className = c;
+  $('adherenciaDetalle').textContent =
+    `${si} de ${ops.length} ${ops.length === 1 ? 'control cumplido' : 'controles cumplidos'}`;
+  $('semaforo').className = 'semaforo ' + c;
+  $('medidorRelleno').style.width = global + '%';
+  $('medidorRelleno').className = c;
+  $('marcaMeta').style.left = META + '%';
+  $('textoMeta').style.left = META + '%';
+  $('textoMeta').textContent = 'objetivo ' + META + '%';
+
+  /* --- Qué punto es el que arrastra --- */
+  const ids = new Set(regs.map(r => r.id));
+  const items = itemsRegistro.filter(i => ids.has(i.registro_id));
+  const porItem = agruparItems(items);
+  const peor = porItem.filter(g => g.n > 0).slice(-1)[0];
+
+  const faltan = Math.max(0, Math.ceil((META/100) * ops.length - si));
+  $('veredicto').textContent = c === 'oro'
+    ? `¡Excelencia! El bundle se cumple en más del ${UMBRAL_ORO}% de los controles.`
+    : c === 'alto'
+      ? `Cumplimiento alto. Faltan ${Math.max(0, Math.ceil((UMBRAL_ORO/100)*ops.length - si))} controles completos más para llegar al ${UMBRAL_ORO}%.`
+      : peor
+        ? `${peor.nombre} es el punto que más arrastra: se cumple en ${fmt(peor.p)} de los controles.`
+        : `Faltan ${faltan} controles completos para llegar al ${META}%.`;
+  $('veredicto').className = 'veredicto ' + c;
+
+  $('subItems').textContent =
+    'Cada punto por separado, de mayor a menor cumplimiento. Los "no corresponde" quedan afuera del cálculo.';
+  barras('porItem', porItem);
+
+  /* --- Cortes habituales --- */
+  barras('porSector', agrupar(ops, 'servicio'));
+  pintarCamas(ops);
+
+  $('tablaTurno').innerHTML = agrupar(ops, 'turno').map(g => `
+    <tr>
+      <td>${g.nombre}</td>
+      <td class="num">${g.n}</td>
+      <td class="num">${g.si}</td>
+      <td class="num pct ${clase(g.p)}">${fmt(g.p)}</td>
+    </tr>`).join('');
+
+  dibujarTendencia(ops);
+  if(bundle.pide_cama) pintarCruce(regs);
+
+  $('pieActualizado').textContent =
+    'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+// Los ítems se agrupan por su texto; 'nc' no entra ni en el numerador ni en el denominador.
+function agruparItems(items){
+  const m = new Map();
+  for(const i of items){
+    if(i.valor === 'nc') continue;
+    const k = i.item_texto || i.item_clave;
+    if(!m.has(k)) m.set(k, { nombre:k, n:0, si:0, orden:i.item_orden ?? 999 });
+    const g = m.get(k); g.n++; if(i.valor === 'si') g.si++;
+  }
+  return [...m.values()].map(g => ({ ...g, p:pct(g.si, g.n) }))
+    .sort((a,b) => b.p - a.p);
+}
+
+/* Cruce con higiene de manos: se toman las camas y los días en que hubo un
+   control de este bundle, y se mira qué pasó con la higiene de manos ahí mismo.
+   No es una observación nueva: son los datos del otro indicador, recortados. */
+function pintarCruce(regs){
+  const llaves = new Set(regs.filter(r => r.cama).map(r => r.cama + '|' + r.fecha));
+  const ops = oportunidades(filas).filter(o => o.cama && llaves.has(o.cama + '|' + o.fecha));
+
+  const camasDia = new Set(regs.filter(r => r.cama).map(r => r.cama + '|' + r.fecha));
+  const conDato = new Set(ops.map(o => o.cama + '|' + o.fecha));
+
+  if(!ops.length){
+    $('subCruce').textContent = 'Adherencia a la higiene de manos en las camas y los días con control de este bundle';
+    $('porCruce').innerHTML =
+      '<p class="sub">Todavía no hay observaciones de higiene de manos en esas camas y esos días. ' +
+      'Van a aparecer solas cuando las rondas coincidan.</p>';
+    $('notaCruce').textContent = '';
+    return;
+  }
+
+  const si = ops.filter(o => o.higienizo).length;
+  const grupos = [{ nombre:'En pacientes con este control', n:ops.length, si, p:pct(si, ops.length) }]
+    .concat(agrupar(ops, 'servicio'));
+  $('subCruce').textContent = 'Adherencia a la higiene de manos en las camas y los días con control de este bundle';
+  barras('porCruce', grupos);
+  $('notaCruce').textContent =
+    `Sale de cruzar los dos indicadores: hay higiene de manos observada en ${conDato.size} de ` +
+    `${camasDia.size} ${camasDia.size === 1 ? 'cama-día' : 'camas-día'} con control cargado. ` +
+    `El resto todavía no tiene observaciones que cruzar.`;
 }
 
 /* ---------- Opciones de filtro ---------- */
@@ -616,17 +843,32 @@ async function llenarFiltros(){
 
 ['fPeriodo','fTurno','fEstamento','fCama'].forEach(id => $(id).addEventListener('change', pintar));
 // El sector manda sobre la lista de camas, así que primero se rehace esa lista.
-$('fServicio').addEventListener('change', () => { llenarCamas(filas); pintar(); });
+$('fServicio').addEventListener('change', () => { llenarCamas(fuenteActual()); pintar(); });
+
+function fuenteActual(){ return bundle && !bundle.propio ? registros : filas; }
 
 async function actualizar(){
-  filas = await descargar();
-  llenarCamas(filas);
+  if(!bundle) return;
+
+  // Higiene de manos se baja igual cuando el bundle cruza por cama.
+  if(bundle.propio || bundle.pide_cama) filas = await descargar();
+
+  if(!bundle.propio){
+    registros = await bajarTodo('hdm_publico_registros',
+      'id,bundle,fecha,periodo,turno,servicio,cama,items_si,items_no,items_nc,cumple',
+      { columna:'bundle', valor:bundle.clave });
+    itemsRegistro = await bajarTodo('hdm_publico_items',
+      'registro_id,bundle,fecha,item_clave,item_texto,item_orden,valor',
+      { columna:'bundle', valor:bundle.clave });
+  }
+
+  llenarCamas(fuenteActual());
   pintar();
 }
 
 (async () => {
   await llenarFiltros();
-  await actualizar();
+  await cargarCatalogo();   // adentro elige el indicador y llama a actualizar()
   setInterval(actualizar, 60000);
 })();
 </script>
