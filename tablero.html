@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0B3A57">
-<title>Adherencia a la higiene de manos · HBEE</title>
+<title>Tablero de resultados de Bundles/Indicadores de Calidad · HBEE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -175,7 +175,7 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
 <header>
   <div class="interno">
     <img src="logo.png" alt="" onerror="this.style.display='none'">
-    <h1 id="tituloTablero">Adherencia a la higiene de manos
+    <h1>Tablero de resultados de Bundles/Indicadores de Calidad
       <span>Hospital del Bicentenario Esteban Echeverría</span></h1>
   </div>
   <div class="indicadores oculto" id="indicadores"></div>
@@ -582,10 +582,7 @@ async function elegirBundle(clave){
     `<span><i class="a"></i> Amarillo: moderado, de ${UMBRAL_MEDIO}% a ${META}%</span>` +
     `<span><i class="r"></i> Rojo: bajo, menos de ${UMBRAL_MEDIO}%</span>`;
 
-  document.title = bundle.nombre + ' · HBEE';
-  $('tituloTablero').innerHTML =
-    (bundle.propio ? 'Adherencia a la higiene de manos' : bundle.nombre) +
-    '<span>Hospital del Bicentenario Esteban Echeverría</span>';
+  document.title = bundle.nombre + ' · Tablero HBEE';
 
   // Secciones que solo tienen sentido en higiene de manos.
   ver('panelCompetencia', bundle.propio);

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B3A57">
-<title>Observación HDM · HBEE</title>
+<title>Monitoreo de Bundles/Indicadores de Calidad · HBEE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -181,7 +181,7 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
 <section id="vistaLogin" class="portada">
   <div class="marca">
     <img src="logo.png" alt="" onerror="this.style.display='none'">
-    <h1>Observación de higiene de manos<span>Hospital del Bicentenario Esteban Echeverría</span></h1>
+    <h1>Monitoreo de Bundles/Indicadores de Calidad<span>Hospital del Bicentenario Esteban Echeverría</span></h1>
   </div>
   <div class="tarjeta">
     <h2>Ingresar</h2>
@@ -228,7 +228,7 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
     <img src="logo.png" alt="" onerror="this.style.display='none'">
     <div class="quien">
       <b id="nombreUsuario">—</b>
-      <span id="subtituloApp">Observación de higiene de manos</span>
+      <span id="subtituloApp">Monitoreo de Bundles/Indicadores de Calidad</span>
     </div>
     <button id="btnSalir">Salir</button>
   </header>
@@ -466,6 +466,7 @@ let bundle = null;        // el que está cargando ahora
 let itemsBundle = [];     // ítems del bundle, traídos de la base
 let selItems = {};        // clave del ítem -> 'si' | 'no' | 'nc'
 let sectoresTodos = [];   // todos los sectores activos, para recortarlos por bundle
+const TITULO_APP = 'Monitoreo de Bundles/Indicadores de Calidad';
 
 /* Camas fijas por sector. Los sectores que no figuran acá no piden cama.
    rango(a,b)  -> camas numeradas de a hasta b
@@ -692,6 +693,7 @@ async function elegirBundle(clave){
 }
 
 $('btnCambiarBundle').addEventListener('click', () => {
+  $('subtituloApp').textContent = TITULO_APP;
   ver('pasoContexto', false); ver('pasoCarga', false); ver('pasoBundle', true);
 });
 
