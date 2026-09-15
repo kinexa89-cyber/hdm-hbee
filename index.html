@@ -81,6 +81,31 @@ main{padding:16px;max-width:640px;margin:0 auto}
 #camaResumen b{font-size:1.05rem;color:var(--azul-900)}
 #btnCambiarCama{border:1px solid var(--azul-700);background:#fff;color:var(--azul-700);
   padding:7px 12px;border-radius:8px;font-size:.82rem}
+
+/* --- Selector de indicadores --- */
+.bundle{width:100%;text-align:left;padding:16px;margin-bottom:10px;border:1px solid var(--linea);
+  background:#fff;border-radius:var(--radio)}
+.bundle b{display:block;font-size:1.05rem;color:var(--azul-900)}
+.bundle span{display:block;margin-top:3px;font-size:.85rem;color:var(--tinta-suave)}
+#cualBundle{font-weight:600;color:var(--azul-700)}
+#btnCambiarBundle{border:1px solid var(--linea);background:#fff;color:var(--azul-700);
+  padding:7px 12px;border-radius:8px;font-size:.82rem}
+
+/* --- Ítems de un bundle --- */
+.item{margin-top:14px;padding-top:14px;border-top:1px solid var(--linea)}
+.item:first-child{margin-top:0;padding-top:0;border-top:0}
+.item h4{margin:0 0 2px;font-size:.98rem;color:var(--tinta)}
+.item p{margin:0 0 8px;font-size:.82rem;color:var(--tinta-suave)}
+.grilla.conNc .opcion.nc{grid-column:1/-1}
+
+/* --- Accesos --- */
+.acceso{padding:11px 0;border-bottom:1px solid var(--linea)}
+.acceso b{display:block;font-size:.95rem}
+.acceso .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.chip{border:1px solid var(--linea);background:#fff;color:var(--tinta-suave);
+  padding:6px 11px;border-radius:999px;font-size:.8rem}
+.chip.dado{background:var(--azul-700);border-color:var(--azul-700);color:#fff;font-weight:600}
+.inactivo b{color:var(--tinta-suave);font-weight:400;text-decoration:line-through}
 .opcion.con-sub::after{content:' ▾';font-size:.75em;opacity:.7}
 .tecnica p{margin:0 0 8px;font-size:.85rem;color:var(--tinta)}
 textarea{width:100%;padding:12px;border:1px solid var(--linea);border-radius:var(--radio);
@@ -203,7 +228,7 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
     <img src="logo.png" alt="" onerror="this.style.display='none'">
     <div class="quien">
       <b id="nombreUsuario">—</b>
-      <span>Observación de higiene de manos</span>
+      <span id="subtituloApp">Observación de higiene de manos</span>
     </div>
     <button id="btnSalir">Salir</button>
   </header>
@@ -217,10 +242,19 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
 
     <!-- ---------- Observar ---------- -->
     <section id="seccionObservar">
+      <div id="pasoBundle" class="oculto">
+        <div class="bloque">
+          <h3>¿Qué querés observar?</h3>
+          <p>Elegí el indicador que vas a cargar ahora.</p>
+          <div id="listaBundles"></div>
+        </div>
+      </div>
+
       <div id="pasoContexto">
         <div class="bloque">
           <h3>Empezar una ronda</h3>
-          <p>Quedan fijos para todas las observaciones que cargues ahora. La fecha y la hora se registran solas.</p>
+          <p>Estás por cargar <span id="cualBundle">—</span>. Turno y sector quedan fijos para toda la ronda; la fecha y la hora se registran solas.</p>
+          <p style="margin-bottom:12px"><button id="btnCambiarBundle" class="oculto">Cambiar de indicador</button></p>
           <div class="campo">
             <label for="inTurno">Turno</label>
             <select id="inTurno"></select>
@@ -256,7 +290,13 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
           </div>
         </div>
 
-        <div class="bloque">
+        <div class="bloque oculto" id="bloqueItems">
+          <h3 id="tituloItems">Controles</h3>
+          <p id="pistaItems">Marcá cada punto. Están todos, así que ninguno puede quedar sin responder.</p>
+          <div id="listaItems"></div>
+        </div>
+
+        <div class="bloque" id="bloqueEstamento">
           <h3>Persona observada</h3>
           <p>¿De qué servicio es?</p>
           <div class="grilla" id="grillaEstamento"></div>
@@ -266,7 +306,7 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
           </div>
         </div>
 
-        <div class="bloque">
+        <div class="bloque" id="bloqueMomentos">
           <h3>Momentos observados</h3>
           <p>Cargá al menos uno. Si no llegaste a ver un momento, dejalo sin marcar.</p>
 
@@ -350,19 +390,30 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
     <section id="seccionAjustes" class="oculto">
       <div class="bloque">
         <h3>Datos cargados</h3>
-        <p>Todo lo que hay registrado hoy en el sistema.</p>
-        <div class="resumen" style="margin:0;padding:0;border:0">
-          <b id="totalObs">—</b>
-          <span>observaciones cargadas en total</span>
+        <p>Lo que hay registrado en el sistema, indicador por indicador.</p>
+        <div id="totales"></div>
+      </div>
+
+      <div class="bloque">
+        <h3>Accesos a los indicadores</h3>
+        <p>Tocá el indicador para dar o sacar el acceso. Cada persona ve solo los que tiene asignados.</p>
+        <div class="campo">
+          <label for="inBuscarAcceso">Buscar persona</label>
+          <input id="inBuscarAcceso" type="text" autocomplete="off" placeholder="Nombre o apellido">
         </div>
+        <div id="listaAccesos"></div>
       </div>
 
       <div class="bloque peligro">
         <h3>Empezar de cero</h3>
-        <p>Borra todas las observaciones cargadas, de todos los observadores y de todos los servicios. El padrón, los turnos, los servicios y las áreas quedan intactos. El borrado es definitivo: no hay copia ni forma de recuperarlo.</p>
+        <p>Borra lo cargado de un indicador, de todos los observadores y de todos los sectores. Los demás indicadores, el padrón, los turnos, los sectores y los accesos quedan intactos. El borrado es definitivo: no hay copia ni forma de recuperarlo.</p>
         <button class="boton secundario" id="btnMostrarReinicio">Quiero reiniciar la app</button>
 
         <div id="cajaReinicio" class="oculto">
+          <div class="campo">
+            <label for="inQueBorrar">¿Qué indicador querés borrar?</label>
+            <select id="inQueBorrar"></select>
+          </div>
           <div class="campo">
             <label for="inFrase">Escribí BORRAR TODO para habilitar el botón</label>
             <input id="inFrase" type="text" autocomplete="off" autocapitalize="characters" placeholder="BORRAR TODO">
@@ -410,6 +461,11 @@ let ficha = null;
 let ctx = { turno:null, servicio:null };
 let sel = { grupo:null, estamento:null, m1:null, m1t:null, m5:null, m5t:null };
 let cama = null;   // solo el número, sin el sector: '5', '100A'
+let misBundles = [];      // indicadores que esta persona tiene asignados
+let bundle = null;        // el que está cargando ahora
+let itemsBundle = [];     // ítems del bundle, traídos de la base
+let selItems = {};        // clave del ítem -> 'si' | 'no' | 'nc'
+let sectoresTodos = [];   // todos los sectores activos, para recortarlos por bundle
 
 /* Camas fijas por sector. Los sectores que no figuran acá no piden cama.
    rango(a,b)  -> camas numeradas de a hasta b
@@ -527,12 +583,13 @@ async function abrirApp(){
   $('nombreUsuario').textContent = ficha.nombre;
   ver('pestanas', ficha.es_admin);
   await cargarOpciones();
-  await refrescarCargas();
+  await cargarBundles();
 }
 
 $('btnSalir').addEventListener('click', async () => {
   await db.auth.signOut();
   ficha = null; ctx = { turno:null, servicio:null }; cama = null;
+  bundle = null; misBundles = []; itemsBundle = []; selItems = {};
   $('inClave').value = ''; $('inDni').value = '';
   ver('pasoCarga', false); ver('pasoContexto', true);
   irA('observar');
@@ -566,6 +623,7 @@ async function cargarOpciones(){
       items.map(i => `<option value="${i.valor}">${i.valor}</option>`).join('');
   };
   llenar('inTurno', porCat('turno'));
+  sectoresTodos = porCat('servicio').map(o => o.valor);
   llenar('inServicio', porCat('servicio'));
   // Estamentos: los que no tienen grupo son botones principales;
   // los que tienen grupo se despliegan al tocar su botón principal.
@@ -578,6 +636,92 @@ async function cargarOpciones(){
       return `<button class="opcion${conSub ? ' con-sub' : ''}" data-valor="${i.valor}">${i.etiqueta || i.valor}</button>`;
     }).join('');
 }
+
+/* ================= Indicadores ================= */
+async function cargarBundles(){
+  const { data, error } = await db.rpc('hdm_mis_bundles');
+  if(error){ toast('No se pudieron cargar los indicadores', true); return; }
+  misBundles = data || [];
+
+  if(!misBundles.length){
+    ver('pasoBundle', true); ver('pasoContexto', false); ver('pasoCarga', false);
+    $('listaBundles').innerHTML =
+      '<p class="vacio">Todavía no tenés ningún indicador asignado. Pedile al administrador que te dé acceso.</p>';
+    return;
+  }
+
+  $('listaBundles').innerHTML = misBundles.map(b =>
+    `<button class="bundle" data-clave="${b.clave}"><b>${b.nombre}</b>` +
+    `<span>${b.descripcion || ''}</span></button>`).join('');
+
+  // Con uno solo no tiene sentido hacer elegir: se entra derecho.
+  if(misBundles.length === 1) return elegirBundle(misBundles[0].clave);
+  ver('pasoBundle', true); ver('pasoContexto', false); ver('pasoCarga', false);
+}
+
+$('listaBundles').addEventListener('click', e => {
+  const b = e.target.closest('.bundle'); if(!b) return;
+  elegirBundle(b.dataset.clave);
+});
+
+async function elegirBundle(clave){
+  bundle = misBundles.find(b => b.clave === clave);
+  if(!bundle) return;
+
+  $('subtituloApp').textContent = bundle.nombre;
+  $('cualBundle').textContent = bundle.nombre;
+  ver('btnCambiarBundle', misBundles.length > 1);
+
+  // Los sectores del desplegable se recortan a los del indicador.
+  const permitidos = bundle.sectores && bundle.sectores.length
+    ? sectoresTodos.filter(v => bundle.sectores.includes(v))
+    : sectoresTodos;
+  $('inServicio').innerHTML = '<option value="">Elegir…</option>' +
+    permitidos.map(v => `<option value="${v}">${v}</option>`).join('');
+
+  // Higiene de manos tiene pantalla propia; el resto usa la de ítems.
+  ver('bloqueEstamento', bundle.propio);
+  ver('bloqueMomentos',  bundle.propio);
+  ver('bloqueItems',    !bundle.propio);
+  $('btnGuardar').textContent = bundle.propio ? 'Guardar observación' : 'Guardar control';
+
+  if(!bundle.propio) await cargarItems();
+
+  ver('pasoBundle', false); ver('pasoCarga', false); ver('pasoContexto', true);
+  refrescarCargas();
+}
+
+$('btnCambiarBundle').addEventListener('click', () => {
+  ver('pasoContexto', false); ver('pasoCarga', false); ver('pasoBundle', true);
+});
+
+async function cargarItems(){
+  const { data, error } = await db.from('hdm_bundle_items')
+    .select('clave,texto,ayuda,permite_nc,orden')
+    .eq('bundle', bundle.clave).eq('activo', true).order('orden');
+  if(error){ toast('No se pudieron cargar los controles', true); return; }
+
+  itemsBundle = data || [];
+  $('tituloItems').textContent = bundle.nombre;
+  $('listaItems').innerHTML = itemsBundle.map(i => `
+    <div class="item" data-clave="${i.clave}">
+      <h4>${i.texto}</h4>
+      ${i.ayuda ? `<p>${i.ayuda}</p>` : ''}
+      <div class="grilla${i.permite_nc ? ' conNc' : ''}" data-rol="item">
+        <button class="opcion si" data-valor="si">Cumple</button>
+        <button class="opcion no" data-valor="no">No cumple</button>
+        ${i.permite_nc ? '<button class="opcion nc" data-valor="nc">No corresponde</button>' : ''}
+      </div>
+    </div>`).join('');
+  selItems = {};
+}
+
+$('listaItems').addEventListener('click', e => {
+  const b = e.target.closest('.opcion'); if(!b) return;
+  const caja = b.closest('.item');
+  elegir(caja.querySelector('[data-rol="item"]'), b);
+  selItems[caja.dataset.clave] = b.dataset.valor;
+});
 
 /* ---- Contexto ---- */
 $('btnComenzar').addEventListener('click', () => {
@@ -658,8 +802,13 @@ document.querySelectorAll('.momento').forEach(caja => {
 });
 
 /* ---- Camas ---- */
+function camasDe(servicio){
+  // El indicador manda: si no pide cama, no se muestra aunque el sector tenga.
+  return (bundle && bundle.pide_cama === false) ? null : CAMAS[servicio];
+}
+
 function pintarCamas(){
-  const def = CAMAS[ctx.servicio];
+  const def = camasDe(ctx.servicio);
   cama = null;
   ver('cajaCamaSub', false);
   $('grillaCamaSub').innerHTML = '';
@@ -679,7 +828,7 @@ function pintarCamas(){
 
 $('grillaCama').addEventListener('click', e => {
   const b = e.target.closest('.opcion'); if(!b) return;
-  const def = CAMAS[ctx.servicio];
+  const def = camasDe(ctx.servicio);
   elegir($('grillaCama'), b);
 
   if(Array.isArray(def)){
@@ -716,13 +865,14 @@ $('btnCambiarCama').addEventListener('click', () => {
   ver('camaResumen', false);
   ver('pistaCama', true);
   ver('grillaCama', true);
-  if(!Array.isArray(CAMAS[ctx.servicio]) && $('grillaCamaSub').innerHTML) ver('cajaCamaSub', true);
+  if(!Array.isArray(camasDe(ctx.servicio)) && $('grillaCamaSub').innerHTML) ver('cajaCamaSub', true);
 });
 
 /* ---- Guardar ---- */
 $('btnGuardar').addEventListener('click', async () => {
   ocultarAviso('avisoCarga');
-  if(CAMAS[ctx.servicio] && !cama) return mostrarAviso('avisoCarga','Falta marcar en qué cama estás observando.');
+  if(camasDe(ctx.servicio) && !cama) return mostrarAviso('avisoCarga','Falta marcar en qué cama estás observando.');
+  if(!bundle.propio) return guardarControl();
   if(sel.grupo && !sel.estamento) return mostrarAviso('avisoCarga',`Falta elegir cuál dentro de ${sel.grupo}.`);
   if(!sel.estamento) return mostrarAviso('avisoCarga','Falta marcar de qué servicio es la persona observada.');
   if(sel.m1 === null && sel.m5 === null) return mostrarAviso('avisoCarga','Marcá al menos uno de los dos momentos.');
@@ -756,6 +906,33 @@ $('btnGuardar').addEventListener('click', async () => {
   window.scrollTo({ top:0, behavior:'smooth' });
 });
 
+// Guarda un control de los bundles genéricos: va por la función de la base,
+// que es la que comprueba el acceso y que no falte ningún ítem.
+async function guardarControl(){
+  const faltan = itemsBundle.filter(i => !selItems[i.clave]);
+  if(faltan.length) return mostrarAviso('avisoCarga',
+    faltan.length === 1 ? `Falta responder: ${faltan[0].texto}.`
+                        : `Faltan ${faltan.length} controles por responder.`);
+
+  $('btnGuardar').disabled = true; $('btnGuardar').textContent = 'Guardando…';
+  const { error } = await db.rpc('hdm_guardar_registro', {
+    p_bundle: bundle.clave,
+    p_turno: ctx.turno,
+    p_servicio: ctx.servicio,
+    p_cama: cama ? `${ctx.servicio} ${cama}` : null,
+    p_observacion: $('inObservacion').value.trim() || null,
+    p_items: selItems
+  });
+  $('btnGuardar').disabled = false; $('btnGuardar').textContent = 'Guardar control';
+
+  if(error) return mostrarAviso('avisoCarga','No se pudo guardar: ' + error.message);
+
+  limpiarFormulario();
+  toast('Control guardado');
+  refrescarCargas();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
 function limpiarFormulario(){
   sel = { grupo:null, estamento:null, m1:null, m1t:null, m5:null, m5t:null };
   document.querySelectorAll('.opcion').forEach(b => b.classList.remove('elegida'));
@@ -773,23 +950,36 @@ function limpiarFormulario(){
     }
   }
   document.querySelectorAll('[data-rol="tecnica-caja"]').forEach(c => c.classList.add('oculto'));
+  selItems = {};
   $('inObservacion').value = '';
 }
 
 /* ---- Cargas de hoy ---- */
 async function refrescarCargas(){
-  const { data, error } = await db.from('hdm_observaciones')
-    .select('servicio,estamento,turno,created_at')
-    .eq('fecha', hoyISO())
-    .order('created_at', { ascending:false }).limit(30);
+  if(!bundle) return;
+
+  const { data, error } = bundle.propio
+    ? await db.from('hdm_observaciones')
+        .select('servicio,cama,estamento,created_at')
+        .eq('fecha', hoyISO()).order('created_at', { ascending:false }).limit(30)
+    : await db.from('hdm_registros')
+        .select('servicio,cama,creado')
+        .eq('bundle', bundle.clave)
+        .eq('fecha', hoyISO()).order('creado', { ascending:false }).limit(30);
   if(error) return;
 
+  const uno = bundle.propio ? 'observación cargada hoy' : 'control cargado hoy';
+  const varios = bundle.propio ? 'observaciones cargadas hoy' : 'controles cargados hoy';
   $('contador').textContent = data.length;
-  $('contadorTexto').textContent = data.length === 1 ? 'observación cargada hoy' : 'observaciones cargadas hoy';
+  $('contadorTexto').textContent = data.length === 1 ? uno : varios;
   ver('sinCargas', data.length === 0);
+  $('sinCargas').textContent = bundle.propio
+    ? 'Todavía no cargaste ninguna hoy.' : 'Todavía no cargaste ninguno hoy.';
   $('listaCargas').innerHTML = data.map(o => {
-    const h = new Date(o.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    return `<li><div>${o.estamento} · ${o.servicio}</div><span>${h}</span></li>`;
+    const h = new Date(o.created_at || o.creado)
+      .toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    const que = bundle.propio ? `${o.estamento} · ${o.servicio}` : (o.cama || o.servicio);
+    return `<li><div>${que}</div><span>${h}</span></li>`;
   }).join('');
 }
 
@@ -901,11 +1091,15 @@ $('btnAgregar').addEventListener('click', async () => {
 });
 
 /* ================= Ajustes (admin) ================= */
+let catalogo = [];     // todos los indicadores activos, para Ajustes
+let padronAccesos = []; // padrón con los accesos de cada uno
+
 async function cargarAjustes(){
   cerrarCajaReinicio();
 
-  const { count } = await db.from('hdm_publico').select('*', { count:'exact', head:true });
-  $('totalObs').textContent = count ?? '—';
+  await cargarCatalogo();
+  await cargarTotales();
+  await cargarAccesos();
 
   const { data, error } = await db.rpc('hdm_historial_reinicios');
   if(error) return;
@@ -916,6 +1110,86 @@ async function cargarAjustes(){
     return `<li><div>${r.nombre || 'Administrador'} · ${r.observaciones_borradas} borradas</div><span>${f}</span></li>`;
   }).join('');
 }
+
+/* ---- Cuánto hay cargado de cada indicador ---- */
+async function cargarTotales(){
+  const filas = [];
+  for(const b of catalogo){
+    // Higiene de manos tiene su propia tabla; el resto vive en hdm_registros.
+    const { count } = b.propio
+      ? await db.from('hdm_publico').select('*', { count:'exact', head:true })
+      : await db.from('hdm_publico_registros').select('*', { count:'exact', head:true })
+          .eq('bundle', b.clave);
+    const n = count ?? 0;
+    const que = b.propio
+      ? (n === 1 ? 'observación' : 'observaciones')
+      : (n === 1 ? 'control' : 'controles');
+    filas.push(`<div class="resumen" style="margin:0 0 6px;padding:0;border:0">
+      <b>${n}</b><span>${que} · ${b.nombre}</span></div>`);
+  }
+  $('totales').innerHTML = filas.join('');
+}
+
+/* ---- Accesos ---- */
+async function cargarCatalogo(){
+  const { data } = await db.from('hdm_bundles')
+    .select('clave,nombre,propio,orden').eq('activo', true).order('orden');
+  catalogo = data || [];
+  $('inQueBorrar').innerHTML = catalogo
+    .map(b => `<option value="${b.clave}">${b.nombre}</option>`).join('');
+}
+
+async function cargarAccesos(){
+  const { data, error } = await db.rpc('hdm_listar_accesos');
+  if(error) return;
+  padronAccesos = data || [];
+  pintarAccesos();
+}
+
+function pintarAccesos(){
+  const busca = $('inBuscarAcceso').value.trim().toLowerCase();
+  const lista = busca
+    ? padronAccesos.filter(p => (p.nombre || '').toLowerCase().includes(busca))
+    : padronAccesos;
+
+  if(!lista.length){
+    $('listaAccesos').innerHTML = '<p class="vacio">No hay nadie con ese nombre.</p>';
+    return;
+  }
+  $('listaAccesos').innerHTML = lista.map(p => `
+    <div class="acceso${p.activo ? '' : ' inactivo'}">
+      <b>${p.nombre}${p.activo ? '' : ' · desactivado'}</b>
+      <div class="chips">
+        ${catalogo.map(b => `<button class="chip${(p.bundles || []).includes(b.clave) ? ' dado' : ''}"
+            data-persona="${p.observador_id}" data-bundle="${b.clave}">${b.nombre}</button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+$('inBuscarAcceso').addEventListener('input', pintarAccesos);
+
+$('listaAccesos').addEventListener('click', async e => {
+  const chip = e.target.closest('.chip'); if(!chip) return;
+  const dar = !chip.classList.contains('dado');
+  chip.disabled = true;
+
+  const { error } = await db.rpc('hdm_set_acceso', {
+    p_observador: chip.dataset.persona,
+    p_bundle: chip.dataset.bundle,
+    p_dar: dar
+  });
+  chip.disabled = false;
+  if(error) return toast('No se pudo cambiar el acceso: ' + error.message, true);
+
+  // Se actualiza lo que ya está en pantalla, sin volver a pedir todo el padrón.
+  const persona = padronAccesos.find(p => p.observador_id === chip.dataset.persona);
+  if(persona){
+    const otros = (persona.bundles || []).filter(c => c !== chip.dataset.bundle);
+    persona.bundles = dar ? otros.concat(chip.dataset.bundle) : otros;
+  }
+  chip.classList.toggle('dado', dar);
+  toast(dar ? 'Acceso dado' : 'Acceso sacado');
+});
 
 function cerrarCajaReinicio(){
   ver('cajaReinicio', false);
@@ -943,8 +1217,9 @@ $('btnReiniciar').addEventListener('click', async () => {
   const clave = $('inClaveReinicio').value;
   if(!clave) return mostrarAviso('avisoReinicio','Escribí tu contraseña para confirmar.');
 
-  const cuantas = $('totalObs').textContent;
-  if(!confirm(`Se van a borrar ${cuantas} observaciones para siempre.\n\nNo hay copia de seguridad ni forma de recuperarlas. El padrón de observadores no se toca.\n\n¿Confirmás?`)) return;
+  const cual = catalogo.find(b => b.clave === $('inQueBorrar').value);
+  if(!cual) return mostrarAviso('avisoReinicio','Elegí qué indicador querés borrar.');
+  if(!confirm(`Se va a borrar todo lo cargado de ${cual.nombre}, para siempre.\n\nNo hay copia de seguridad ni forma de recuperarlo. El padrón, los accesos y los demás indicadores no se tocan.\n\n¿Confirmás?`)) return;
 
   $('btnReiniciar').disabled = true; $('btnReiniciar').textContent = 'Borrando…';
 
@@ -955,7 +1230,11 @@ $('btnReiniciar').addEventListener('click', async () => {
     return mostrarAviso('avisoReinicio','La contraseña no es correcta.');
   }
 
-  const { data, error } = await db.rpc('hdm_reiniciar_datos', { p_confirmacion: $('inFrase').value.trim() });
+  // Higiene de manos tiene su propia función, con su propio historial de reinicios.
+  const { data, error } = cual.propio
+    ? await db.rpc('hdm_reiniciar_datos',  { p_confirmacion: $('inFrase').value.trim() })
+    : await db.rpc('hdm_reiniciar_bundle', { p_bundle: cual.clave,
+                                             p_confirmacion: $('inFrase').value.trim() });
   $('btnReiniciar').textContent = 'Borrar todas las observaciones';
 
   if(error){
