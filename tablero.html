@@ -184,6 +184,7 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
     <select id="fEstamento"><option value="">Todos los servicios</option></select>
     <select id="fServicio"><option value="">Todos los sectores</option></select>
     <select id="fTurno"><option value="">Todos los turnos</option></select>
+    <select id="fCama"><option value="">Todas las camas</option></select>
   </div>
 
   <div id="cargando" class="vacio">Cargando datos…</div>
@@ -267,6 +268,12 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
         </table>
       </section>
     </div>
+
+    <section class="panel" style="margin-bottom:18px">
+      <h2>Por cama</h2>
+      <p class="sub" id="subCamas">Solo las camas con suficientes oportunidades observadas</p>
+      <div id="porCama"></div>
+    </section>
   </div>
 </main>
 
@@ -290,6 +297,9 @@ const UMBRAL_ORO = 95;
 const META = 80;
 const UMBRAL_MEDIO = 60;
 const MIN_OPORTUNIDADES = 0;
+/* MIN_OPORT_CAMA  mínimo de oportunidades para que una cama se muestre en "Por cama".
+   Con pocas observaciones el porcentaje de una cama es puro ruido. */
+const MIN_OPORT_CAMA = 10;
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth:{ persistSession:false } });
 const $ = id => document.getElementById(id);
@@ -304,7 +314,7 @@ async function descargar(){
   let desde = 0, todo = [];
   while(true){
     const { data, error } = await db.from('hdm_publico')
-      .select('fecha,periodo,turno,servicio,estamento,m1_higienizo,m1_tecnica,m5_higienizo,m5_tecnica')
+      .select('fecha,periodo,turno,servicio,cama,estamento,m1_higienizo,m1_tecnica,m5_higienizo,m5_tecnica')
       .order('fecha', { ascending:true })
       .range(desde, desde + paso - 1);
     if(error){ console.error(error); break; }
@@ -343,9 +353,11 @@ function filtrar(rows){
 
   const iso = desde ? new Date(desde.getTime() - desde.getTimezoneOffset()*60000).toISOString().slice(0,10) : null;
   const s = $('fServicio').value, t = $('fTurno').value, e = $('fEstamento').value;
+  const cm = $('fCama').value;
 
   return rows.filter(r =>
     (!iso || r.fecha >= iso) &&
+    (!cm || r.cama === cm) &&
     (!s || r.servicio === s) &&
     (!t || r.turno === t) &&
     (!e || (e.startsWith('grupo:') ? gruposEstamento[e.slice(6)]?.has(r.estamento) : r.estamento === e))
@@ -365,6 +377,27 @@ function barras(destino, grupos){
         <div class="pista"><i class="${clase(p)}" style="width:${p || 0}%"></i></div>
       </div>`;
   }).join('') || '<p class="sub">Sin datos.</p>';
+}
+
+/* Las camas del select salen de los datos, no de una lista fija: así aparecen
+   solo las que tienen observaciones, y se acomodan al sector elegido. */
+function ordenCama(a, b){
+  const parte = c => { const i = c.lastIndexOf(' '); return [c.slice(0, i), c.slice(i + 1)]; };
+  const [sa, na] = parte(a), [sb, nb] = parte(b);
+  return sa.localeCompare(sb) || (parseInt(na, 10) - parseInt(nb, 10)) || na.localeCompare(nb);
+}
+
+function llenarCamas(rows){
+  const s = $('fServicio').value;
+  const elegida = $('fCama').value;
+  const camas = [...new Set(rows
+    .filter(r => r.cama && (!s || r.servicio === s))
+    .map(r => r.cama))].sort(ordenCama);
+
+  $('fCama').innerHTML = '<option value="">Todas las camas</option>' +
+    camas.map(c => `<option value="${c}">${c}</option>`).join('');
+  // Si la cama que estaba elegida no pertenece al sector nuevo, se vuelve a "todas".
+  $('fCama').value = camas.includes(elegida) ? elegida : '';
 }
 
 function agrupar(ops, campo){
@@ -524,6 +557,25 @@ function pintar(){
 
   barras('porSector', agrupar(ops, 'servicio'));
 
+  /* --- Camas --- */
+  const porCama = agrupar(ops.filter(o => o.cama), 'cama')
+    .filter(g => g.n >= MIN_OPORT_CAMA);
+  if(porCama.length){
+    // Sin sector elegido la lista se vuelve interminable, así que se muestran
+    // las puntas y se invita a filtrar por sector para ver el detalle.
+    const recortar = !$('fServicio').value && porCama.length > 12;
+    const lista = recortar ? porCama.slice(0, 6).concat(porCama.slice(-6)) : porCama;
+    $('subCamas').textContent = recortar
+      ? `Las 6 camas con mejor adherencia y las 6 con peor, de ${porCama.length}. Elegí un sector para ver todas sus camas.`
+      : `Camas con al menos ${MIN_OPORT_CAMA} oportunidades observadas, de mayor a menor adherencia`;
+    barras('porCama', lista);
+  } else {
+    $('subCamas').textContent = 'Comparación de la adherencia entre camas';
+    $('porCama').innerHTML =
+      `<p class="sub">Todavía ninguna cama llega a ${MIN_OPORT_CAMA} oportunidades observadas. ` +
+      `Va a aparecer sola cuando se carguen más observaciones.</p>`;
+  }
+
   $('tablaTurno').innerHTML = agrupar(ops, 'turno').map(g => `
     <tr>
       <td>${g.nombre}</td>
@@ -562,10 +614,13 @@ async function llenarFiltros(){
     }).join('');
 }
 
-['fPeriodo','fServicio','fTurno','fEstamento'].forEach(id => $(id).addEventListener('change', pintar));
+['fPeriodo','fTurno','fEstamento','fCama'].forEach(id => $(id).addEventListener('change', pintar));
+// El sector manda sobre la lista de camas, así que primero se rehace esa lista.
+$('fServicio').addEventListener('change', () => { llenarCamas(filas); pintar(); });
 
 async function actualizar(){
   filas = await descargar();
+  llenarCamas(filas);
   pintar();
 }
 

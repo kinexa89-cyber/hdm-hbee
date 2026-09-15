@@ -74,6 +74,13 @@ main{padding:16px;max-width:640px;margin:0 auto}
 .tecnica{margin-top:12px;padding-top:12px;border-top:1px dashed var(--linea)}
 .subgrupo{margin-top:12px;padding:12px;border:1px dashed #B6D2E4;border-radius:var(--radio);background:var(--azul-050)}
 .subgrupo p{margin:0 0 8px;font-size:.85rem;color:var(--tinta)}
+.grilla.camas{grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:6px}
+.grilla.camas .opcion{padding:12px 4px;font-size:.88rem}
+#camaResumen{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 14px;border:1px solid var(--azul-500);background:var(--azul-050);border-radius:var(--radio)}
+#camaResumen b{font-size:1.05rem;color:var(--azul-900)}
+#btnCambiarCama{border:1px solid var(--azul-700);background:#fff;color:var(--azul-700);
+  padding:7px 12px;border-radius:8px;font-size:.82rem}
 .opcion.con-sub::after{content:' ▾';font-size:.75em;opacity:.7}
 .tecnica p{margin:0 0 8px;font-size:.85rem;color:var(--tinta)}
 textarea{width:100%;padding:12px;border:1px solid var(--linea);border-radius:var(--radio);
@@ -235,6 +242,20 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
           <button id="btnCambiarContexto">Cambiar</button>
         </div>
 
+        <div class="bloque oculto" id="bloqueCama">
+          <h3>Cama</h3>
+          <div id="camaResumen" class="oculto">
+            <span>Cama <b id="camaTexto">—</b></span>
+            <button id="btnCambiarCama">Cambiar</button>
+          </div>
+          <p id="pistaCama">¿En qué cama estás observando?</p>
+          <div class="grilla camas" id="grillaCama"></div>
+          <div class="subgrupo oculto" id="cajaCamaSub">
+            <p id="camaSubTitulo"></p>
+            <div class="grilla camas" id="grillaCamaSub"></div>
+          </div>
+        </div>
+
         <div class="bloque">
           <h3>Persona observada</h3>
           <p>¿De qué servicio es?</p>
@@ -388,6 +409,21 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
 let ficha = null;
 let ctx = { turno:null, servicio:null };
 let sel = { grupo:null, estamento:null, m1:null, m1t:null, m5:null, m5t:null };
+let cama = null;   // solo el número, sin el sector: '5', '100A'
+
+/* Camas fijas por sector. Los sectores que no figuran acá no piden cama.
+   rango(a,b)  -> camas numeradas de a hasta b
+   dobles(a,b) -> cada número con su A y su B, elegidos en dos toques */
+const rango  = (a,b) => Array.from({length:b-a+1}, (_,i) => String(a+i));
+const dobles = (a,b) => ({ numeros: rango(a,b), letras: ['A','B'] });
+const CAMAS = {
+  'UTI A':       rango(1, 8),
+  'UTI B':       rango(9, 20),
+  'UTI C':       rango(21, 27),
+  'Emergencias': rango(1, 12),
+  'UCMM B':      dobles(100, 131),
+  'UCMM C':      dobles(132, 163)
+};
 let subEstamentos = {};   // 'Salud mental' -> [{valor, etiqueta}], 'Departamento quirúrgico' -> [...]
 
 /* ================= Utilidades ================= */
@@ -496,7 +532,7 @@ async function abrirApp(){
 
 $('btnSalir').addEventListener('click', async () => {
   await db.auth.signOut();
-  ficha = null; ctx = { turno:null, servicio:null };
+  ficha = null; ctx = { turno:null, servicio:null }; cama = null;
   $('inClave').value = ''; $('inDni').value = '';
   ver('pasoCarga', false); ver('pasoContexto', true);
   irA('observar');
@@ -549,6 +585,7 @@ $('btnComenzar').addEventListener('click', () => {
   if(!turno || !servicio) return toast('Elegí turno y sector', true);
   ctx = { turno, servicio };
   $('ctxServicio').textContent = servicio;
+  pintarCamas();
   $('ctxFechaTurno').textContent = `${fechaLegible(hoyISO())} · turno ${turno.toLowerCase()}`;
   ver('pasoContexto', false); ver('pasoCarga', true);
   refrescarCargas();
@@ -620,9 +657,72 @@ document.querySelectorAll('.momento').forEach(caja => {
   });
 });
 
+/* ---- Camas ---- */
+function pintarCamas(){
+  const def = CAMAS[ctx.servicio];
+  cama = null;
+  ver('cajaCamaSub', false);
+  $('grillaCamaSub').innerHTML = '';
+  ver('bloqueCama', !!def);
+  if(!def) return ($('grillaCama').innerHTML = '');
+
+  ver('camaResumen', false);
+  ver('pistaCama', true);
+  ver('grillaCama', true);
+  const numeros = Array.isArray(def) ? def : def.numeros;
+  $('pistaCama').textContent = Array.isArray(def)
+    ? '¿En qué cama estás observando?'
+    : 'Elegí el número y después A o B.';
+  $('grillaCama').innerHTML = numeros
+    .map(n => `<button class="opcion" data-num="${n}">${n}</button>`).join('');
+}
+
+$('grillaCama').addEventListener('click', e => {
+  const b = e.target.closest('.opcion'); if(!b) return;
+  const def = CAMAS[ctx.servicio];
+  elegir($('grillaCama'), b);
+
+  if(Array.isArray(def)){
+    cama = b.dataset.num;
+    ver('cajaCamaSub', false);
+  } else {
+    cama = null;   // hasta que elija la letra
+    $('camaSubTitulo').textContent = `Cama ${b.dataset.num}: ¿A o B?`;
+    $('grillaCamaSub').innerHTML = def.letras
+      .map(l => `<button class="opcion" data-cama="${b.dataset.num}${l}">${l}</button>`).join('');
+    ver('cajaCamaSub', true);
+  }
+  mostrarCamaActual();
+});
+
+$('grillaCamaSub').addEventListener('click', e => {
+  const b = e.target.closest('.opcion'); if(!b) return;
+  elegir($('grillaCamaSub'), b);
+  cama = b.dataset.cama;
+  mostrarCamaActual();
+});
+
+// La cama queda a la vista arriba de todo, porque se mantiene entre observaciones.
+function mostrarCamaActual(){
+  const elegida = !!cama;
+  $('camaTexto').textContent = cama || '—';
+  ver('camaResumen', elegida);
+  ver('pistaCama', !elegida);
+  ver('grillaCama', !elegida);
+  if(elegida) ver('cajaCamaSub', false);
+}
+
+$('btnCambiarCama').addEventListener('click', () => {
+  ver('camaResumen', false);
+  ver('pistaCama', true);
+  ver('grillaCama', true);
+  if(!Array.isArray(CAMAS[ctx.servicio]) && $('grillaCamaSub').innerHTML) ver('cajaCamaSub', true);
+});
+
 /* ---- Guardar ---- */
 $('btnGuardar').addEventListener('click', async () => {
   ocultarAviso('avisoCarga');
+  if(CAMAS[ctx.servicio] && !cama) return mostrarAviso('avisoCarga','Falta marcar en qué cama estás observando.');
   if(sel.grupo && !sel.estamento) return mostrarAviso('avisoCarga',`Falta elegir cuál dentro de ${sel.grupo}.`);
   if(!sel.estamento) return mostrarAviso('avisoCarga','Falta marcar de qué servicio es la persona observada.');
   if(sel.m1 === null && sel.m5 === null) return mostrarAviso('avisoCarga','Marcá al menos uno de los dos momentos.');
@@ -637,6 +737,7 @@ $('btnGuardar').addEventListener('click', async () => {
     fecha: hoyISO(),
     turno: ctx.turno,
     servicio: ctx.servicio,
+    cama: cama ? `${ctx.servicio} ${cama}` : null,
     estamento: sel.estamento,
     m1_higienizo: sel.m1, m1_tecnica: sel.m1t,
     m5_higienizo: sel.m5, m5_tecnica: sel.m5t,
@@ -660,6 +761,17 @@ function limpiarFormulario(){
   document.querySelectorAll('.opcion').forEach(b => b.classList.remove('elegida'));
   ver('cajaSub', false);
   $('grillaSub').innerHTML = '';
+  // La cama no se borra: lo habitual es cargar varias observaciones en la misma.
+  if(cama){
+    const suelta = $('grillaCama').querySelector(`[data-num="${cama}"]`);
+    const conLetra = $('grillaCamaSub').querySelector(`[data-cama="${cama}"]`);
+    if(suelta) suelta.classList.add('elegida');
+    if(conLetra){
+      conLetra.classList.add('elegida');
+      const n = cama.slice(0, -1);
+      $('grillaCama').querySelector(`[data-num="${n}"]`)?.classList.add('elegida');
+    }
+  }
   document.querySelectorAll('[data-rol="tecnica-caja"]').forEach(c => c.classList.add('oculto'));
   $('inObservacion').value = '';
 }
