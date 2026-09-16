@@ -106,6 +106,21 @@ main{padding:16px;max-width:640px;margin:0 auto}
   padding:6px 11px;border-radius:999px;font-size:.8rem}
 .chip.dado{background:var(--azul-700);border-color:var(--azul-700);color:#fff;font-weight:600}
 .inactivo b{color:var(--tinta-suave);font-weight:400;text-decoration:line-through}
+
+/* --- Carga mensual --- */
+.numero{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:11px 0;border-bottom:1px solid var(--linea)}
+.numero label{flex:1;font-size:.92rem}
+.numero label i{display:block;font-style:normal;font-size:.78rem;color:var(--tinta-suave)}
+.numero input{width:96px;text-align:right;padding:11px;border:1px solid var(--linea);
+  border-radius:var(--radio);font-size:1rem}
+.totales{margin-top:12px;padding:12px 14px;border-radius:var(--radio);background:var(--azul-050);
+  border:1px solid #B6D2E4}
+.totales div{display:flex;justify-content:space-between;font-size:.9rem;padding:3px 0}
+.totales div b{font-size:1.05rem;color:var(--azul-900)}
+.mes{display:flex;justify-content:space-between;gap:10px;padding:9px 0;
+  border-bottom:1px solid var(--linea);font-size:.88rem}
+.mes span{color:var(--tinta-suave)}
 .opcion.con-sub::after{content:' ▾';font-size:.75em;opacity:.7}
 .tecnica p{margin:0 0 8px;font-size:.85rem;color:var(--tinta)}
 textarea{width:100%;padding:12px;border:1px solid var(--linea);border-radius:var(--radio);
@@ -250,6 +265,31 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
         </div>
       </div>
 
+      <div id="pasoMensual" class="oculto">
+        <div class="bloque">
+          <h3 id="tituloMensual">Cargar el mes</h3>
+          <p id="pistaMensual">Se carga a mes vencido, un sector por vez.</p>
+          <div class="campo">
+            <label for="inMes">Mes</label>
+            <select id="inMes"></select>
+          </div>
+          <div class="campo">
+            <label for="inSectorMes">Sector</label>
+            <select id="inSectorMes"></select>
+          </div>
+          <div id="camposMensual"></div>
+          <div class="totales" id="totalesMes"></div>
+          <p class="aviso oculto" id="avisoMensual"></p>
+          <button id="btnGuardarMes" class="boton" style="margin-top:14px">Guardar el mes</button>
+        </div>
+
+        <div class="bloque">
+          <h3>Meses ya cargados</h3>
+          <p>Si elegís uno que ya está, la app te avisa antes de tocarlo.</p>
+          <div id="listaMeses"></div>
+        </div>
+      </div>
+
       <div id="pasoContexto">
         <div class="bloque">
           <h3>Empezar una ronda</h3>
@@ -287,6 +327,23 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
           <div class="subgrupo oculto" id="cajaCamaSub">
             <p id="camaSubTitulo"></p>
             <div class="grilla camas" id="grillaCamaSub"></div>
+          </div>
+        </div>
+
+        <div class="bloque oculto" id="bloqueEvento">
+          <h3 id="tituloEvento">Resultado</h3>
+          <p id="pistaEvento">—</p>
+          <div class="campo">
+            <label for="inFechaEvento">Fecha</label>
+            <input id="inFechaEvento" type="date">
+          </div>
+          <div class="grilla" id="grillaResultado">
+            <button class="opcion si" data-valor="si">Exitosa</button>
+            <button class="opcion no" data-valor="no">Fallida</button>
+          </div>
+          <div class="subgrupo oculto" id="cajaMotivo">
+            <p>¿Por qué falló?</p>
+            <div class="grilla" id="grillaMotivo"></div>
           </div>
         </div>
 
@@ -465,6 +522,9 @@ let misBundles = [];      // indicadores que esta persona tiene asignados
 let bundle = null;        // el que está cargando ahora
 let itemsBundle = [];     // ítems del bundle, traídos de la base
 let selItems = {};        // clave del ítem -> 'si' | 'no' | 'nc'
+let selEvento = { exito:null, motivo:null };
+let camposMes = [];       // los números que pide un indicador mensual
+let motivos = [];         // motivos de falla de un indicador por evento
 let sectoresTodos = [];   // todos los sectores activos, para recortarlos por bundle
 const TITULO_APP = 'Monitoreo de Bundles/Indicadores de Calidad';
 
@@ -591,6 +651,8 @@ $('btnSalir').addEventListener('click', async () => {
   await db.auth.signOut();
   ficha = null; ctx = { turno:null, servicio:null }; cama = null;
   bundle = null; misBundles = []; itemsBundle = []; selItems = {};
+  selEvento = { exito:null, motivo:null }; camposMes = []; motivos = [];
+  ver('pasoMensual', false);
   $('inClave').value = ''; $('inDni').value = '';
   ver('pasoCarga', false); ver('pasoContexto', true);
   irA('observar');
@@ -680,21 +742,30 @@ async function elegirBundle(clave){
   $('inServicio').innerHTML = '<option value="">Elegir…</option>' +
     permitidos.map(v => `<option value="${v}">${v}</option>`).join('');
 
-  // Higiene de manos tiene pantalla propia; el resto usa la de ítems.
+  const tipo = bundle.tipo || 'checklist';
+
+  // Cada tipo enciende sus propios bloques.
   ver('bloqueEstamento', bundle.propio);
   ver('bloqueMomentos',  bundle.propio);
-  ver('bloqueItems',    !bundle.propio);
-  $('btnGuardar').textContent = bundle.propio ? 'Guardar observación' : 'Guardar control';
+  ver('bloqueItems',     tipo === 'checklist' && !bundle.propio);
+  ver('bloqueEvento',    tipo === 'evento');
+  $('btnGuardar').textContent =
+    tipo === 'evento' ? 'Guardar' : bundle.propio ? 'Guardar observación' : 'Guardar control';
 
-  if(!bundle.propio) await cargarItems();
+  if(tipo === 'checklist' && !bundle.propio) await cargarItems();
+  if(tipo === 'evento') await prepararEvento();
 
-  ver('pasoBundle', false); ver('pasoCarga', false); ver('pasoContexto', true);
+  ver('pasoBundle', false); ver('pasoCarga', false);
+  ver('pasoMensual', tipo === 'mensual');
+  ver('pasoContexto', tipo !== 'mensual');
+  if(tipo === 'mensual') await prepararMensual();
   refrescarCargas();
 }
 
 $('btnCambiarBundle').addEventListener('click', () => {
   $('subtituloApp').textContent = TITULO_APP;
-  ver('pasoContexto', false); ver('pasoCarga', false); ver('pasoBundle', true);
+  ver('pasoContexto', false); ver('pasoCarga', false); ver('pasoMensual', false);
+  ver('pasoBundle', true);
 });
 
 async function cargarItems(){
@@ -724,6 +795,179 @@ $('listaItems').addEventListener('click', e => {
   elegir(caja.querySelector('[data-rol="item"]'), b);
   selItems[caja.dataset.clave] = b.dataset.valor;
 });
+
+/* ================= Indicadores mensuales ================= */
+async function prepararMensual(){
+  ocultarAviso('avisoMensual');
+  $('tituloMensual').textContent = bundle.nombre;
+  $('pistaMensual').textContent =
+    'Se carga a mes vencido, un sector por vez. El mes en curso todavía no se puede cargar.';
+
+  // Últimos 12 meses cerrados, del más reciente al más viejo.
+  const hoy = new Date();
+  const meses = [];
+  for(let i = 1; i <= 12; i++){
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+    const clave = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    meses.push({ clave, texto: d.toLocaleDateString('es-AR',{ month:'long', year:'numeric' }) });
+  }
+  $('inMes').innerHTML = meses.map(m => `<option value="${m.clave}">${m.texto}</option>`).join('');
+
+  const permitidos = bundle.sectores && bundle.sectores.length
+    ? sectoresTodos.filter(v => bundle.sectores.includes(v))
+    : sectoresTodos;
+  $('inSectorMes').innerHTML = '<option value="">Elegir…</option>' +
+    permitidos.map(v => `<option value="${v}">${v}</option>`).join('');
+
+  const { data } = await db.from('hdm_bundle_items')
+    .select('clave,texto,ayuda,orden')
+    .eq('bundle', bundle.clave).eq('tipo', 'numero').eq('activo', true).order('orden');
+  camposMes = data || [];
+  $('camposMensual').innerHTML = camposMes.map(c => `
+    <div class="numero">
+      <label for="mes_${c.clave}">${c.texto}${c.ayuda ? `<i>${c.ayuda}</i>` : ''}</label>
+      <input id="mes_${c.clave}" data-clave="${c.clave}" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
+    </div>`).join('');
+  $('camposMensual').querySelectorAll('input')
+    .forEach(i => i.addEventListener('input', pintarTotales));
+
+  pintarTotales();
+  await cargarMesesCargados();
+}
+
+// Los días de ARM y el total no se cargan: se calculan solos mientras escribís.
+function pintarTotales(){
+  const v = c => Number($('mes_' + c)?.value || 0);
+  const arm = v('tet') + v('tqt_arm');
+  const total = arm + v('tqt_esp');
+  const suma = camposMes.reduce((a,c) => a + v(c.clave), 0);
+
+  $('totalesMes').innerHTML = camposMes.some(c => c.clave === 'tet')
+    ? `<div><span>Días de ARM (TET + TQT)</span><b>${arm}</b></div>
+       <div><span>Días de VAA en total</span><b>${total}</b></div>`
+    : `<div><span>Total</span><b>${suma}</b></div>`;
+}
+
+function nombreMes(periodo){
+  const [a, m] = periodo.split('-');
+  return new Date(Number(a), Number(m) - 1, 1)
+    .toLocaleDateString('es-AR', { month:'long', year:'numeric' });
+}
+
+async function cargarMesesCargados(){
+  const { data, error } = await db.rpc('hdm_mensual_cargado', { p_bundle: bundle.clave });
+  if(error) return;
+  const meses = data || [];
+  $('listaMeses').innerHTML = meses.length
+    ? meses.map(m => `<div class="mes"><b>${nombreMes(m.periodo)} · ${m.servicio}</b>` +
+        `<span>${m.mio ? 'lo cargaste vos' : 'lo cargó otra persona'}</span></div>`).join('')
+    : '<p class="vacio">Todavía no hay ningún mes cargado.</p>';
+}
+
+$('btnGuardarMes').addEventListener('click', () => guardarMes(false));
+
+async function guardarMes(pisar){
+  ocultarAviso('avisoMensual');
+  const sector = $('inSectorMes').value;
+  if(!sector) return mostrarAviso('avisoMensual','Elegí el sector.');
+
+  const valores = {};
+  for(const c of camposMes){
+    const campo = $('mes_' + c.clave);
+    if(campo.value === '') return mostrarAviso('avisoMensual', `Falta completar: ${c.texto}.`);
+    const n = Number(campo.value);
+    if(!Number.isFinite(n) || n < 0 || !Number.isInteger(n))
+      return mostrarAviso('avisoMensual', `${c.texto}: tiene que ser un número entero de días.`);
+    valores[c.clave] = n;
+  }
+
+  $('btnGuardarMes').disabled = true; $('btnGuardarMes').textContent = 'Guardando…';
+  const { data, error } = await db.rpc('hdm_guardar_mensual', {
+    p_bundle: bundle.clave, p_periodo: $('inMes').value,
+    p_servicio: sector, p_valores: valores, p_pisar: pisar
+  });
+  $('btnGuardarMes').disabled = false; $('btnGuardarMes').textContent = 'Guardar el mes';
+
+  if(error){
+    if(error.message.includes('YA_CARGADO')){
+      const texto = $('inMes').selectedOptions[0].textContent;
+      if(confirm(`${texto} ya está cargado para ${sector}.\n\n¿Querés reemplazar esos números por los que acabás de poner?`))
+        return guardarMes(true);
+      return;
+    }
+    return mostrarAviso('avisoMensual','No se pudo guardar: ' + error.message);
+  }
+
+  toast(data === 'corregido' ? 'Mes corregido' : 'Mes guardado');
+  camposMes.forEach(c => $('mes_' + c.clave).value = '');
+  pintarTotales();
+  await cargarMesesCargados();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+/* ================= Indicadores por evento ================= */
+async function prepararEvento(){
+  $('tituloEvento').textContent = bundle.nombre;
+  $('pistaEvento').textContent = bundle.descripcion || 'Marcá cómo salió.';
+  $('inFechaEvento').value = hoyISO();
+  $('inFechaEvento').max = hoyISO();
+
+  const { data } = await db.from('hdm_bundle_items')
+    .select('clave,texto,orden')
+    .eq('bundle', bundle.clave).eq('tipo', 'motivo').eq('activo', true).order('orden');
+  motivos = data || [];
+  $('grillaMotivo').innerHTML = motivos
+    .map(m => `<button class="opcion" data-valor="${m.clave}">${m.texto}</button>`).join('');
+  selEvento = { exito:null, motivo:null };
+}
+
+$('grillaResultado').addEventListener('click', e => {
+  const b = e.target.closest('.opcion'); if(!b) return;
+  elegir($('grillaResultado'), b);
+  selEvento.exito = b.dataset.valor === 'si';
+  // El motivo solo se pregunta cuando falló.
+  ver('cajaMotivo', !selEvento.exito && motivos.length > 0);
+  if(selEvento.exito){
+    selEvento.motivo = null;
+    $('grillaMotivo').querySelectorAll('.opcion').forEach(x => x.classList.remove('elegida'));
+  }
+});
+
+$('grillaMotivo').addEventListener('click', e => {
+  const b = e.target.closest('.opcion'); if(!b) return;
+  elegir($('grillaMotivo'), b);
+  selEvento.motivo = b.dataset.valor;
+});
+
+async function guardarEvento(){
+  if(selEvento.exito === null) return mostrarAviso('avisoCarga','Falta marcar cómo salió.');
+  if(!selEvento.exito && motivos.length && !selEvento.motivo)
+    return mostrarAviso('avisoCarga','Falta marcar por qué falló.');
+
+  $('btnGuardar').disabled = true; $('btnGuardar').textContent = 'Guardando…';
+  const { error } = await db.rpc('hdm_guardar_evento', {
+    p_bundle: bundle.clave,
+    p_fecha: $('inFechaEvento').value || hoyISO(),
+    p_turno: ctx.turno,
+    p_servicio: ctx.servicio,
+    p_cama: cama ? `${ctx.servicio} ${cama}` : null,
+    p_exito: selEvento.exito,
+    p_motivo: selEvento.motivo,
+    p_observacion: $('inObservacion').value.trim() || null
+  });
+  $('btnGuardar').disabled = false; $('btnGuardar').textContent = 'Guardar';
+
+  if(error){
+    return mostrarAviso('avisoCarga', error.message.includes('YA_CARGADO')
+      ? `Esa cama ya tiene una carga con esa fecha. Si te equivocaste, avisale a un administrador.`
+      : 'No se pudo guardar: ' + error.message);
+  }
+
+  limpiarFormulario();
+  toast('Guardado');
+  refrescarCargas();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
 
 /* ---- Contexto ---- */
 $('btnComenzar').addEventListener('click', () => {
@@ -874,6 +1118,7 @@ $('btnCambiarCama').addEventListener('click', () => {
 $('btnGuardar').addEventListener('click', async () => {
   ocultarAviso('avisoCarga');
   if(camasDe(ctx.servicio) && !cama) return mostrarAviso('avisoCarga','Falta marcar en qué cama estás observando.');
+  if(bundle.tipo === 'evento') return guardarEvento();
   if(!bundle.propio) return guardarControl();
   if(sel.grupo && !sel.estamento) return mostrarAviso('avisoCarga',`Falta elegir cuál dentro de ${sel.grupo}.`);
   if(!sel.estamento) return mostrarAviso('avisoCarga','Falta marcar de qué servicio es la persona observada.');
@@ -953,6 +1198,8 @@ function limpiarFormulario(){
   }
   document.querySelectorAll('[data-rol="tecnica-caja"]').forEach(c => c.classList.add('oculto'));
   selItems = {};
+  selEvento = { exito:null, motivo:null };
+  ver('cajaMotivo', false);
   $('inObservacion').value = '';
 }
 
@@ -960,28 +1207,39 @@ function limpiarFormulario(){
 async function refrescarCargas(){
   if(!bundle) return;
 
+  if(bundle.tipo === 'mensual') return;   // ahí manda la lista de meses cargados
+
   const { data, error } = bundle.propio
     ? await db.from('hdm_observaciones')
         .select('servicio,cama,estamento,created_at')
         .eq('fecha', hoyISO()).order('created_at', { ascending:false }).limit(30)
-    : await db.from('hdm_registros')
-        .select('servicio,cama,creado')
-        .eq('bundle', bundle.clave)
-        .eq('fecha', hoyISO()).order('creado', { ascending:false }).limit(30);
+    : bundle.tipo === 'evento'
+      ? await db.from('hdm_eventos')
+          .select('servicio,cama,exito,creado')
+          .eq('bundle', bundle.clave)
+          .eq('fecha', hoyISO()).order('creado', { ascending:false }).limit(30)
+      : await db.from('hdm_registros')
+          .select('servicio,cama,creado')
+          .eq('bundle', bundle.clave)
+          .eq('fecha', hoyISO()).order('creado', { ascending:false }).limit(30);
   if(error) return;
 
-  const uno = bundle.propio ? 'observación cargada hoy' : 'control cargado hoy';
-  const varios = bundle.propio ? 'observaciones cargadas hoy' : 'controles cargados hoy';
+  const [uno, varios, nada] = bundle.propio
+    ? ['observación cargada hoy', 'observaciones cargadas hoy', 'Todavía no cargaste ninguna hoy.']
+    : bundle.tipo === 'evento'
+      ? ['carga hecha hoy', 'cargas hechas hoy', 'Todavía no cargaste ninguna hoy.']
+      : ['control cargado hoy', 'controles cargados hoy', 'Todavía no cargaste ninguno hoy.'];
   $('contador').textContent = data.length;
   $('contadorTexto').textContent = data.length === 1 ? uno : varios;
   ver('sinCargas', data.length === 0);
-  $('sinCargas').textContent = bundle.propio
-    ? 'Todavía no cargaste ninguna hoy.' : 'Todavía no cargaste ninguno hoy.';
+  $('sinCargas').textContent = nada;
   $('listaCargas').innerHTML = data.map(o => {
     const h = new Date(o.created_at || o.creado)
       .toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    const que = bundle.propio ? `${o.estamento} · ${o.servicio}` : (o.cama || o.servicio);
-    return `<li><div>${que}</div><span>${h}</span></li>`;
+    const texto = bundle.propio ? `${o.estamento} · ${o.servicio}`
+      : bundle.tipo === 'evento' ? `${o.cama || o.servicio} · ${o.exito ? 'exitosa' : 'fallida'}`
+      : (o.cama || o.servicio);
+    return `<li><div>${texto}</div><span>${h}</span></li>`;
   }).join('');
 }
 
