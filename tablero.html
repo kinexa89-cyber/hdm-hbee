@@ -369,12 +369,13 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
    UMBRAL_ORO      excelencia: de acá para arriba, dorado
    META            adherencia alta: de acá hasta UMBRAL_ORO, verde
    UMBRAL_MEDIO    adherencia moderada: de acá hasta META, amarillo. Debajo, rojo
-   MIN_OPORTUNIDADES  mínimo para entrar al ranking (0 = entran todos) */
+   MIN_OPORTUNIDADES  mínimo de oportunidades para entrar al ranking de servicios (0 = entran todos).
+                      Con 1 o 2 observaciones el porcentaje es 0% o 100% por azar, no por adherencia. */
 /* Son los valores por defecto: cada indicador puede traer los suyos desde la base. */
 let UMBRAL_ORO = 95;
 let META = 80;
 let UMBRAL_MEDIO = 60;
-const MIN_OPORTUNIDADES = 0;
+const MIN_OPORTUNIDADES = 10;
 /* MIN_OPORT_CAMA  mínimo de oportunidades para que una cama se muestre en "Por cama".
    Con pocas observaciones el porcentaje de una cama es puro ruido. */
 const MIN_OPORT_CAMA = 10;
@@ -618,14 +619,17 @@ function dibujarCompetencia(ops){
 
   let nota = '';
   if(rankeados.length === 1) nota = 'Estás viendo un solo servicio. Elegí “Todos los servicios” arriba para ver el ranking completo.';
-  if(afuera.length) nota += (nota ? ' ' : '') + 'Fuera del ranking por pocas observaciones: ' +
-    afuera.map(g => `${g.nombre} (n=${g.n})`).join(', ') + '.';
+  if(afuera.length) nota += (nota ? ' ' : '') +
+    `Fuera del ranking por tener menos de ${MIN_OPORTUNIDADES} oportunidades observadas: ` +
+    afuera.map(g => `${g.nombre} (${g.si} de ${g.n})`).join(', ') + '. Van a entrar solos cuando lleguen al mínimo.';
   $('notaRanking').textContent = nota;
   ver('notaRanking', !!nota);
 
-  $('subRanking').textContent = rankeados.length === 1
-    ? 'Adherencia del servicio en el período elegido'
-    : `Adherencia de los ${rankeados.length} servicios con observaciones en el período elegido`;
+  $('subRanking').textContent = !rankeados.length
+    ? `Todavía ningún servicio llega a ${MIN_OPORTUNIDADES} oportunidades observadas en el período elegido`
+    : rankeados.length === 1
+      ? `Adherencia del servicio en el período elegido (mínimo ${MIN_OPORTUNIDADES} oportunidades)`
+      : `Adherencia de los ${rankeados.length} servicios con al menos ${MIN_OPORTUNIDADES} oportunidades observadas en el período elegido`;
 }
 
 function dibujarTendencia(ops){
