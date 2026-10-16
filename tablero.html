@@ -242,6 +242,13 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
       <div id="porItem"></div>
     </section>
 
+    <!-- 2b'. Qué falta cargar (solo bundle entero) -->
+    <section class="panel oculto" id="panelFaltantes" style="margin-bottom:18px">
+      <h2>Qué falta cargar</h2>
+      <p class="sub" id="subFaltantes">—</p>
+      <div id="porFaltante"></div>
+    </section>
+
     <!-- 2c. Motivos de falla -->
     <section class="panel oculto" id="panelMotivos" style="margin-bottom:18px">
       <h2>Por qué falló</h2>
@@ -362,6 +369,7 @@ const ver = (id, m) => $(id).classList.toggle('oculto', !m);
 let filas = [];             // observaciones de higiene de manos
 let registros = [];         // controles del bundle elegido, uno por fila
 let itemsRegistro = [];     // los mismos controles, abiertos ítem por ítem
+let compuestos = [];        // bundle entero: una fila por cama-día
 let eventos = [];           // eventos sueltos (extubaciones, por ejemplo)
 let mensuales = [];         // conteos cargados mes a mes
 let catalogo = [];          // indicadores activos
@@ -374,7 +382,9 @@ async function bajarTodo(tabla, columnas, filtro){
   let desde = 0, todo = [];
   while(true){
     let q = db.from(tabla).select(columnas).order('fecha', { ascending:true });
-    if(filtro) q = q.eq(filtro.columna, filtro.valor);
+    if(filtro) q = Array.isArray(filtro.valor)
+      ? q.in(filtro.columna, filtro.valor)
+      : q.eq(filtro.columna, filtro.valor);
     const { data, error } = await q.range(desde, desde + paso - 1);
     if(error){ console.error(error); break; }
     todo = todo.concat(data);
@@ -402,7 +412,58 @@ function oportunidades(rows){
    higiene de manos, así todos los gráficos sirven para los dos sin tocarlos.
    higienizo = el bundle se cumplió entero (regla de todo o nada). */
 function comoOportunidades(regs){
-  return regs.map(r => ({ ...r, higienizo: r.cumple }));
+  // Un control donde todo fue "no corresponde" no suma ni resta: queda afuera.
+  return regs.filter(r => (Number(r.items_si) + Number(r.items_no)) > 0)
+    .map(r => ({ ...r, higienizo: Number(r.items_no) === 0 }));
+}
+
+/* ---------- Bundle entero (grupo) ----------
+   Cada cama-día es un control. Cada punto del grupo (cada indicador, más higiene
+   de manos si el grupo la incluye) se resume en:
+     'si'    todo lo cargado ese día cumplió
+     'no'    alguna carga no cumplió
+     'nc'    solo hubo "no corresponde"
+     'falta' nadie lo cargó ese día
+   La cama-día cumple el bundle si está completa (ningún 'falta') y no hay ningún 'no'. */
+function estadoPunto(cargas){
+  if(!cargas || !cargas.length) return 'falta';
+  const validas = cargas.filter(c => c.n > 0);
+  if(!validas.length) return 'nc';
+  return validas.every(c => c.ok) ? 'si' : 'no';
+}
+
+function armarCompuesto(regs, obsHdm){
+  const puntos = bundle.puntos;   // [{clave, nombre}]
+  const mapa = new Map();
+  const llave = (cama, fecha) => cama + '|' + fecha;
+
+  for(const r of regs){
+    if(!r.cama) continue;
+    const k = llave(r.cama, r.fecha);
+    if(!mapa.has(k)) mapa.set(k, { fecha:r.fecha, periodo:r.fecha.slice(0,7),
+                                   servicio:r.servicio, cama:r.cama, cargas:{} });
+    (mapa.get(k).cargas[r.bundle] = mapa.get(k).cargas[r.bundle] || [])
+      .push({ n: Number(r.items_si) + Number(r.items_no), ok: Number(r.items_no) === 0 });
+  }
+
+  // Higiene de manos: solo se mira en las camas-día que ya son pacientes del bundle.
+  if(bundle.incluye_hdm){
+    for(const o of oportunidades(obsHdm)){
+      if(!o.cama) continue;
+      const g = mapa.get(llave(o.cama, o.fecha));
+      if(!g) continue;
+      (g.cargas.hdm = g.cargas.hdm || []).push({ n:1, ok:o.higienizo });
+    }
+  }
+
+  return [...mapa.values()].map(g => {
+    const estados = {};
+    puntos.forEach(p => estados[p.clave] = estadoPunto(g.cargas[p.clave]));
+    const vals = Object.values(estados);
+    const completo = !vals.includes('falta');
+    return { fecha:g.fecha, periodo:g.periodo, servicio:g.servicio, cama:g.cama, turno:'',
+             estados, completo, higienizo: completo && !vals.includes('no') };
+  });
 }
 
 function pct(parte, total){ return total ? Math.round(parte / total * 1000) / 10 : null; }
@@ -580,10 +641,29 @@ function dibujarTendencia(ops){
 
 /* ---------- Indicadores ---------- */
 async function cargarCatalogo(){
-  const { data } = await db.from('hdm_bundles')
-    .select('clave,nombre,descripcion,propio,pide_cama,umbral_medio,meta,umbral_oro,orden')
-    .eq('activo', true).order('orden');
-  catalogo = data || [];
+  const [{ data }, { data: grupos }] = await Promise.all([
+    db.from('hdm_bundles')
+      .select('clave,nombre,descripcion,propio,pide_cama,umbral_medio,meta,umbral_oro,orden,tipo,sentido,unidad,grupo')
+      .eq('activo', true).order('orden'),
+    db.from('hdm_grupos')
+      .select('clave,nombre,descripcion,incluye_hdm,umbral_medio,meta,umbral_oro,orden')
+      .eq('activo', true).order('orden')
+  ]);
+  const sueltos = data || [];
+
+  // El bundle entero se arma con sus indicadores, y va justo antes del primero de ellos.
+  catalogo = [];
+  for(const b of sueltos){
+    const g = (grupos || []).find(x => x.clave === b.grupo);
+    if(g && !catalogo.some(c => c.clave === g.clave)){
+      const miembros = sueltos.filter(x => x.grupo === g.clave);
+      const puntos = miembros.map(m => ({ clave:m.clave, nombre:m.nombre }));
+      if(g.incluye_hdm) puntos.push({ clave:'hdm', nombre:'Higiene de manos' });
+      catalogo.push({ ...g, tipo:'compuesto', propio:false, pide_cama:true,
+                      sentido:'mayor_mejor', miembros: miembros.map(m => m.clave), puntos });
+    }
+    catalogo.push(b);
+  }
   if(!catalogo.length) return;
 
   ver('indicadores', catalogo.length > 1);
@@ -628,29 +708,37 @@ async function elegirBundle(clave){
   document.title = bundle.nombre + ' · Tablero HBEE';
 
   // Cada tipo enciende sus propias secciones.
+  const compuesto = tipo === 'compuesto';
+  const deGrupo   = !!bundle.grupo;   // un punto suelto de un bundle: el cruce ya lo hace el bundle entero
   ver('panelCompetencia', bundle.propio);
   ver('filaHdm',          bundle.propio);
   ver('fEstamento',       bundle.propio);
-  ver('panelItems',       tipo === 'checklist' && !bundle.propio);
-  ver('panelCruce',       tipo === 'checklist' && !bundle.propio && bundle.pide_cama);
+  ver('panelItems',       compuesto || (tipo === 'checklist' && !bundle.propio && !deGrupo));
+  ver('panelFaltantes',   compuesto);
+  ver('panelCruce',       tipo === 'checklist' && !bundle.propio && bundle.pide_cama && !deGrupo);
   ver('panelMotivos',     tipo === 'evento');
   ver('panelDesglose',    conteo);
   ver('panelMeses',       conteo);
   ver('panelTendencia',  !conteo);
-  ver('panelTurno',      !conteo);
+  ver('panelTurno',      !conteo && !compuesto);
   ver('panelCama',        bundle.pide_cama && !conteo);
-  ver('fTurno',          !conteo);
+  ver('fTurno',          !conteo && !compuesto);
   ver('fCama',            bundle.pide_cama && !conteo);
   ver('semaforo',        !conteo);
   ver('medidor',         !conteo);
   ver('pieMedidor',      !conteo);
   ver('veredicto',       !conteo);
+  // Un filtro escondido no puede seguir filtrando.
+  if(compuesto || conteo) $('fTurno').value = '';
+  if(!bundle.propio) $('fEstamento').value = '';
   $('subTurno').textContent = bundle.propio
     ? 'Oportunidades observadas y adherencia'
     : tipo === 'evento' ? 'Casos registrados y porcentaje de falla'
+    : deGrupo ? 'Controles cargados y cumplimiento'
     : 'Controles cargados y cumplimiento del bundle';
   $('subSector').textContent = conteo
     ? `${(bundle.unidad || 'Datos').charAt(0).toUpperCase() + (bundle.unidad || 'Datos').slice(1)} cargados en cada sector`
+    : compuesto ? 'Camas-día con el bundle completo, por sector'
     : 'En qué sector del hospital se observó';
   $('thTotal').textContent = bundle.propio ? 'Oportunidades' : tipo === 'evento' ? 'Casos' : 'Controles';
   $('thBien').textContent  = bundle.propio ? 'Se higienizó'  : tipo === 'evento' ? 'Fallas'  : 'Cumplen';
@@ -662,14 +750,20 @@ async function elegirBundle(clave){
         ? 'Porcentaje de casos que terminaron en falla sobre el total registrado. Acá el número bueno es el bajo, así que el semáforo se lee al revés que en los demás indicadores.'
         : conteo
           ? 'Días cargados por el servicio, mes a mes y por sector, a mes vencido. No es un porcentaje: es un conteo, y sirve de denominador para otros indicadores.'
-          : 'Porcentaje de controles en los que se cumplieron todos los puntos del bundle. Alcanza con que falle uno para que el control entero cuente como no cumplido. Los puntos que no corresponden a ese paciente no suman ni restan.';
+          : compuesto
+            ? `Porcentaje de camas-día en las que se cumplieron los ${bundle.puntos.length} puntos del bundle. Cada punto lo carga un observador distinto, así que se juntan por cama y por día. Si falta cargar alguno, esa cama-día queda afuera del cálculo. Alcanza con que falle uno para que no cumpla, y lo que no corresponde no suma ni resta.`
+            : deGrupo
+              ? `Porcentaje de controles en los que se cumplió este punto. Es uno de los puntos del ${(catalogo.find(c => c.clave === bundle.grupo) || {}).nombre || 'bundle'}; el bundle entero tiene su propia pestaña. Si un control se marcó como "no corresponde", no suma ni resta.`
+              : 'Porcentaje de controles en los que se cumplieron todos los puntos del bundle. Alcanza con que falle uno para que el control entero cuente como no cumplido. Los puntos que no corresponden a ese paciente no suman ni restan.';
   $('sinDatos').textContent =
     bundle.propio ? 'No hay observaciones registradas con esos filtros.'
     : tipo === 'evento' ? 'No hay casos registrados con esos filtros.'
     : conteo ? 'Todavía no hay meses cargados para ese período.'
+    : compuesto ? 'No hay controles de ninguno de los puntos del bundle con esos filtros.'
     : 'No hay controles registrados con esos filtros.';
   $('subTendencia').textContent =
-    (bundle.propio ? 'Adherencia' : tipo === 'evento' ? 'Porcentaje de falla' : 'Cumplimiento del bundle') +
+    (bundle.propio ? 'Adherencia' : tipo === 'evento' ? 'Porcentaje de falla'
+      : compuesto ? 'Cumplimiento del bundle entero' : deGrupo ? 'Cumplimiento' : 'Cumplimiento del bundle') +
     ' mes a mes, últimos 12 meses. La línea punteada es el objetivo.';
 
   ver('cargando', true); ver('contenido', false); ver('sinDatos', false);
@@ -680,6 +774,7 @@ function pintar(){
   if(!bundle) return;
   if(bundle.tipo === 'evento')  return pintarEvento();
   if(bundle.tipo === 'mensual') return pintarMensual();
+  if(bundle.tipo === 'compuesto') return pintarCompuesto();
   if(!bundle.propio) return pintarBundle();
 
   const rows = filtrar(filas);
@@ -755,7 +850,9 @@ function pintar(){
 /* ---------- Camas (sirve para los dos indicadores) ---------- */
 function pintarCamas(ops){
   const minimo = bundle && bundle.propio ? MIN_OPORT_CAMA : MIN_CONTROLES_CAMA;
-  const que = bundle && bundle.propio ? 'oportunidades observadas' : 'controles cargados';
+  const que = bundle && bundle.propio ? 'oportunidades observadas'
+    : bundle && bundle.tipo === 'compuesto' ? 'días con el bundle completo'
+    : 'controles cargados';
   const porCama = agrupar(ops.filter(o => o.cama), 'cama').filter(g => g.n >= minimo);
 
   if(porCama.length){
@@ -792,8 +889,10 @@ function pintarBundle(){
 
   $('adherencia').textContent = fmt(global);
   $('adherencia').className = c;
+  const nc = regs.length - ops.length;
   $('adherenciaDetalle').textContent =
-    `${si} de ${ops.length} ${ops.length === 1 ? 'control cumplido' : 'controles cumplidos'}`;
+    `${si} de ${ops.length} ${ops.length === 1 ? 'control cumplido' : 'controles cumplidos'}` +
+    (nc ? ` · ${nc} no ${nc === 1 ? 'correspondía' : 'correspondían'}` : '');
   $('semaforo').className = 'semaforo ' + c;
   $('medidorRelleno').style.width = global + '%';
   $('medidorRelleno').className = c;
@@ -813,7 +912,7 @@ function pintarBundle(){
     ? `¡Excelencia! El bundle se cumple en más del ${UMBRAL_ORO}% de los controles.`
     : c === 'alto'
       ? `Cumplimiento alto. Faltan ${Math.max(0, Math.ceil((UMBRAL_ORO/100)*ops.length - si))} controles completos más para llegar al ${UMBRAL_ORO}%.`
-      : peor
+      : peor && !bundle.grupo
         ? `${peor.nombre} es el punto que más arrastra: se cumple en ${fmt(peor.p)} de los controles.`
         : `Faltan ${faltan} controles completos para llegar al ${META}%.`;
   $('veredicto').className = 'veredicto ' + c;
@@ -836,6 +935,82 @@ function pintarBundle(){
 
   dibujarTendencia(ops);
   if(bundle.pide_cama) pintarCruce(regs);
+
+  $('pieActualizado').textContent =
+    'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+/* ---------- Pintado del bundle entero ---------- */
+function pintarCompuesto(){
+  const todas = filtrar(compuestos);
+  const completas = todas.filter(c => c.completo);
+  const incompletas = todas.length - completas.length;
+
+  ver('cargando', false);
+  ver('sinDatos', todas.length === 0);
+  ver('contenido', todas.length > 0);
+  if(!todas.length) return;
+
+  /* --- Cumplimiento del bundle entero --- */
+  const si = completas.filter(c => c.higienizo).length;
+  const global = pct(si, completas.length);
+  const c = clase(global);
+
+  $('adherencia').textContent = fmt(global);
+  $('adherencia').className = c;
+  $('adherenciaDetalle').textContent = completas.length
+    ? `${si} de ${completas.length} ${completas.length === 1 ? 'cama-día completa' : 'camas-día completas'}` +
+      (incompletas ? ` · ${incompletas} ${incompletas === 1 ? 'quedó afuera' : 'quedaron afuera'} por incompleta${incompletas === 1 ? '' : 's'}` : '')
+    : `${incompletas} ${incompletas === 1 ? 'cama-día' : 'camas-día'} con cargas, ninguna con los ${bundle.puntos.length} puntos`;
+  $('semaforo').className = 'semaforo ' + c;
+  $('medidorRelleno').style.width = (global || 0) + '%';
+  $('medidorRelleno').className = c;
+  $('marcaMeta').style.left = META + '%';
+  $('textoMeta').style.left = META + '%';
+  $('textoMeta').textContent = 'objetivo ' + META + '%';
+  $('textoMeta').classList.remove('derecha');
+
+  /* --- Punto por punto, sobre las camas-día completas --- */
+  const porPunto = bundle.puntos.map(p => {
+    const validas = completas.filter(x => x.estados[p.clave] === 'si' || x.estados[p.clave] === 'no');
+    const n = validas.length, s = validas.filter(x => x.estados[p.clave] === 'si').length;
+    return { nombre:p.nombre, n, si:s, p:pct(s, n) };
+  }).sort((a,b) => (b.p ?? -1) - (a.p ?? -1));
+  const peor = porPunto.filter(g => g.n > 0).slice(-1)[0];
+
+  $('veredicto').textContent = !completas.length
+    ? `Todavía ninguna cama-día tiene los ${bundle.puntos.length} puntos cargados. Mirá abajo qué falta.`
+    : c === 'oro'
+      ? `¡Excelencia! El bundle entero se cumple en más del ${UMBRAL_ORO}% de las camas-día.`
+      : peor && peor.p < 100
+        ? `${peor.nombre} es el punto que más arrastra: se cumple en ${fmt(peor.p)} de las camas-día completas.`
+        : `Faltan ${Math.max(0, Math.ceil((META/100) * completas.length - si))} camas-día cumplidas para llegar al ${META}%.`;
+  $('veredicto').className = 'veredicto ' + c;
+
+  $('subItems').textContent = completas.length
+    ? 'Cada punto sobre las camas-día completas, de mayor a menor. Lo que no corresponde queda afuera. Para ver todos los controles de un punto, andá a su pestaña.'
+    : 'Va a aparecer cuando haya camas-día con todos los puntos cargados.';
+  if(completas.length) barras('porItem', porPunto); else $('porItem').innerHTML = '';
+
+  /* --- Qué falta cargar, sobre todas las camas-día --- */
+  const faltantes = bundle.puntos.map(p => ({
+    nombre:p.nombre, n: todas.filter(x => x.estados[p.clave] === 'falta').length
+  })).filter(f => f.n > 0).sort((a,b) => b.n - a.n);
+  $('subFaltantes').textContent = incompletas
+    ? `${incompletas} de ${todas.length} camas-día tienen algún punto sin cargar. Cuántas veces faltó cada uno:`
+    : `Las ${todas.length} camas-día tienen los ${bundle.puntos.length} puntos cargados.`;
+  $('porFaltante').innerHTML = faltantes.map(f => {
+    const p = pct(f.n, todas.length);
+    return `<div class="barra">
+      <div class="fila1"><span>${f.nombre}</span><b>${f.n} <em>de ${todas.length}</em></b></div>
+      <div class="pista"><i class="medio" style="width:${p}%"></i></div>
+    </div>`;
+  }).join('');
+
+  /* --- Cortes --- */
+  barras('porSector', agrupar(completas, 'servicio'));
+  pintarCamas(completas);
+  dibujarTendencia(completas);
 
   $('pieActualizado').textContent =
     'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
@@ -1073,16 +1248,25 @@ async function llenarFiltros(){
 // El sector manda sobre la lista de camas, así que primero se rehace esa lista.
 $('fServicio').addEventListener('change', () => { llenarCamas(fuenteActual()); pintar(); });
 
-function fuenteActual(){ return bundle && !bundle.propio ? registros : filas; }
+function fuenteActual(){
+  if(bundle && bundle.tipo === 'compuesto') return compuestos;
+  return bundle && !bundle.propio ? registros : filas;
+}
 
 async function actualizar(){
   if(!bundle) return;
 
-  // Higiene de manos se baja igual cuando un checklist la cruza por cama.
-  if(bundle.propio || (bundle.tipo === 'checklist' && bundle.pide_cama))
-    filas = await descargar();
+  // Higiene de manos se baja igual cuando un checklist o el bundle entero la cruza por cama.
+  const cruza = (bundle.tipo === 'checklist' && bundle.pide_cama && !bundle.grupo) ||
+                (bundle.tipo === 'compuesto' && bundle.incluye_hdm);
+  if(bundle.propio || cruza) filas = await descargar();
 
-  if(bundle.tipo === 'evento'){
+  if(bundle.tipo === 'compuesto'){
+    registros = await bajarTodo('hdm_publico_registros',
+      'id,bundle,fecha,periodo,turno,servicio,cama,items_si,items_no,items_nc,cumple',
+      { columna:'bundle', valor:bundle.miembros });
+    compuestos = armarCompuesto(registros, filas);
+  } else if(bundle.tipo === 'evento'){
     eventos = await bajarTodo('hdm_publico_eventos',
       'bundle,fecha,periodo,turno,servicio,cama,exito,motivo,motivo_texto',
       { columna:'bundle', valor:bundle.clave });

@@ -775,11 +775,16 @@ async function cargarItems(){
   if(error){ toast('No se pudieron cargar los controles', true); return; }
 
   itemsBundle = data || [];
+  const unico = itemsBundle.length === 1;
   $('tituloItems').textContent = bundle.nombre;
+  // Un indicador de un solo punto no necesita repetir el título ni avisar que "están todos".
+  $('pistaItems').textContent = unico
+    ? (itemsBundle[0].ayuda || 'Marcá si se cumple.')
+    : 'Marcá cada punto. Están todos, así que ninguno puede quedar sin responder.';
   $('listaItems').innerHTML = itemsBundle.map(i => `
     <div class="item" data-clave="${i.clave}">
-      <h4>${i.texto}</h4>
-      ${i.ayuda ? `<p>${i.ayuda}</p>` : ''}
+      ${unico ? '' : `<h4>${i.texto}</h4>`}
+      ${i.ayuda && !unico ? `<p>${i.ayuda}</p>` : ''}
       <div class="grilla${i.permite_nc ? ' conNc' : ''}" data-rol="item">
         <button class="opcion si" data-valor="si">Cumple</button>
         <button class="opcion no" data-valor="no">No cumple</button>
@@ -1158,7 +1163,8 @@ $('btnGuardar').addEventListener('click', async () => {
 async function guardarControl(){
   const faltan = itemsBundle.filter(i => !selItems[i.clave]);
   if(faltan.length) return mostrarAviso('avisoCarga',
-    faltan.length === 1 ? `Falta responder: ${faltan[0].texto}.`
+    itemsBundle.length === 1 ? 'Falta marcar si se cumple.'
+    : faltan.length === 1 ? `Falta responder: ${faltan[0].texto}.`
                         : `Faltan ${faltan.length} controles por responder.`);
 
   $('btnGuardar').disabled = true; $('btnGuardar').textContent = 'Guardando…';
