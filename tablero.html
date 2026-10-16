@@ -152,6 +152,20 @@ td.pct{font-weight:700}
 td.pct.alto{color:var(--verde)} td.pct.medio{color:var(--ambar)} td.pct.bajo{color:var(--rojo)}
 td.pct.oro{color:var(--oro)}
 
+/* ---------- tasas ---------- */
+.tasas{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:640px){ .tasas{grid-template-columns:repeat(3,1fr)} }
+.tasa{background:#fff;border:1px solid var(--linea);border-top:5px solid var(--linea);border-radius:14px;padding:18px}
+.tasa.alto{border-top-color:var(--verde)} .tasa.bajo{border-top-color:var(--rojo)}
+.tasa h3{margin:0;font-size:.85rem;font-weight:600;color:var(--tinta-suave)}
+.tasa b{display:block;font-size:2.6rem;font-weight:700;line-height:1.05;margin-top:6px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tasa b.alto{color:var(--verde)} .tasa b.bajo{color:var(--rojo)}
+.tasa .u{display:block;font-size:.76rem;color:var(--tinta-suave);margin-top:2px}
+.tasa .estado{margin:10px 0 0;font-size:.85rem;font-weight:600}
+.tasa .estado.alto{color:var(--verde)} .tasa .estado.bajo{color:var(--rojo)}
+.tasa .det{margin:4px 0 0;font-size:.78rem;color:var(--tinta-suave)}
+td.falta{color:var(--tinta-suave);font-style:italic;font-size:.78rem}
+
 /* ---------- referencia semáforo ---------- */
 .referencia{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;font-size:.78rem;color:var(--tinta-suave)}
 .referencia span{display:flex;align-items:center;gap:6px}
@@ -202,7 +216,13 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
   <div id="contenido" class="oculto">
 
     <!-- 1. Hospital -->
-    <section class="hero">
+    <!-- 0. Tasas (indicadores por cada 1000 días) -->
+    <section class="oculto" id="panelTasas" style="margin-bottom:18px">
+      <div class="tasas" id="tarjetasTasa"></div>
+      <p class="notaRanking" id="notaTasas"></p>
+    </section>
+
+    <section class="hero" id="hero">
       <div class="arriba">
         <div class="semaforo" id="semaforo">
           <span class="luz-r"></span><span class="luz-a"></span><span class="luz-v"></span><span class="luz-d"></span>
@@ -306,7 +326,7 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
         <p class="sub" id="subTurno">Oportunidades observadas y adherencia</p>
         <table>
           <thead>
-            <tr>
+            <tr id="cabezaTurno">
               <th>Turno</th>
               <th class="num" id="thTotal">Oportunidades</th>
               <th class="num" id="thBien">Se higienizó</th>
@@ -365,11 +385,15 @@ const MIN_CONTROLES_CAMA = 5;
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth:{ persistSession:false } });
 const $ = id => document.getElementById(id);
 const ver = (id, m) => $(id).classList.toggle('oculto', !m);
+const CABEZA_TURNO = $('cabezaTurno').innerHTML;
 
 let filas = [];             // observaciones de higiene de manos
 let registros = [];         // controles del bundle elegido, uno por fila
 let itemsRegistro = [];     // los mismos controles, abiertos ítem por ítem
 let compuestos = [];        // bundle entero: una fila por cama-día
+let tasaEventos = [];       // eventos de un indicador de tasa
+let tasaDenom = [];         // días del conteo mensual que hace de denominador
+let tasaTipos = [];         // tipos de evento de la tasa, con su meta
 let eventos = [];           // eventos sueltos (extubaciones, por ejemplo)
 let mensuales = [];         // conteos cargados mes a mes
 let catalogo = [];          // indicadores activos
@@ -643,7 +667,7 @@ function dibujarTendencia(ops){
 async function cargarCatalogo(){
   const [{ data }, { data: grupos }] = await Promise.all([
     db.from('hdm_bundles')
-      .select('clave,nombre,descripcion,propio,pide_cama,umbral_medio,meta,umbral_oro,orden,tipo,sentido,unidad,grupo')
+      .select('clave,nombre,descripcion,propio,pide_cama,sectores,umbral_medio,meta,umbral_oro,orden,tipo,sentido,unidad,grupo,denominador_bundle,denominador_items,por_cada')
       .eq('activo', true).order('orden'),
     db.from('hdm_grupos')
       .select('clave,nombre,descripcion,incluye_hdm,umbral_medio,meta,umbral_oro,orden')
@@ -693,8 +717,10 @@ async function elegirBundle(clave){
   UMBRAL_ORO   = Number(bundle.umbral_oro);
   const tipo = bundle.tipo || 'checklist';
   const conteo = tipo === 'mensual';
+  const tasa = tipo === 'tasa';
 
-  ver('referencia', !conteo);
+  $('cabezaTurno').innerHTML = CABEZA_TURNO;   // la tasa la reemplaza; los demás usan la original
+  ver('referencia', !conteo && !tasa);
   $('referencia').innerHTML = bundle.sentido === 'menor_mejor'
     ? `<span><i class="d"></i> Dorado: menos de ${UMBRAL_ORO}%</span>` +
       `<span><i class="v"></i> Verde: de ${UMBRAL_ORO}% a ${META}%</span>` +
@@ -710,6 +736,8 @@ async function elegirBundle(clave){
   // Cada tipo enciende sus propias secciones.
   const compuesto = tipo === 'compuesto';
   const deGrupo   = !!bundle.grupo;   // un punto suelto de un bundle: el cruce ya lo hace el bundle entero
+  ver('hero',             !tasa);
+  ver('panelTasas',       tasa);
   ver('panelCompetencia', bundle.propio);
   ver('filaHdm',          bundle.propio);
   ver('fEstamento',       bundle.propio);
@@ -718,18 +746,20 @@ async function elegirBundle(clave){
   ver('panelCruce',       tipo === 'checklist' && !bundle.propio && bundle.pide_cama && !deGrupo);
   ver('panelMotivos',     tipo === 'evento');
   ver('panelDesglose',    conteo);
-  ver('panelMeses',       conteo);
+  ver('panelMeses',       conteo || tasa);
   ver('panelTendencia',  !conteo);
   ver('panelTurno',      !conteo && !compuesto);
   ver('panelCama',        bundle.pide_cama && !conteo);
-  ver('fTurno',          !conteo && !compuesto);
-  ver('fCama',            bundle.pide_cama && !conteo);
+  // En una tasa, turno y cama no tienen días propios: no pueden filtrar el cálculo.
+  ver('fTurno',          !conteo && !compuesto && !tasa);
+  ver('fCama',            bundle.pide_cama && !conteo && !tasa);
   ver('semaforo',        !conteo);
   ver('medidor',         !conteo);
   ver('pieMedidor',      !conteo);
   ver('veredicto',       !conteo);
   // Un filtro escondido no puede seguir filtrando.
-  if(compuesto || conteo) $('fTurno').value = '';
+  if(compuesto || conteo || tasa) $('fTurno').value = '';
+  if(conteo || tasa) $('fCama').value = '';
   if(!bundle.propio) $('fEstamento').value = '';
   $('subTurno').textContent = bundle.propio
     ? 'Oportunidades observadas y adherencia'
@@ -775,6 +805,7 @@ function pintar(){
   if(bundle.tipo === 'evento')  return pintarEvento();
   if(bundle.tipo === 'mensual') return pintarMensual();
   if(bundle.tipo === 'compuesto') return pintarCompuesto();
+  if(bundle.tipo === 'tasa') return pintarTasa();
   if(!bundle.propio) return pintarBundle();
 
   const rows = filtrar(filas);
@@ -1014,6 +1045,220 @@ function pintarCompuesto(){
 
   $('pieActualizado').textContent =
     'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+/* ---------- Indicadores de tasa (eventos por cada 1000 días) ----------
+   El denominador sale de un conteo mensual cargado por sector (días de TET).
+   Un mes entra en la tasa solo si tiene los días cargados en todos los sectores
+   que se están mirando: si no, sus eventos quedan "pendientes" y no inflan la tasa. */
+function calcularTasa(evs, dens, sectores){
+  const dias = new Map();
+  for(const d of dens){
+    const k = d.periodo + '|' + d.servicio;
+    dias.set(k, (dias.get(k) || 0) + Number(d.valor));
+  }
+  const periodos = [...new Set(evs.map(e => e.periodo).concat(dens.map(d => d.periodo)))].sort();
+  const vacio = () => ({ n:0, porTipo:{}, reintPor:{}, reint:0, dias:0 });
+  const sumar = (acc, lista, d) => {
+    for(const e of lista){
+      acc.n++;
+      acc.porTipo[e.motivo] = (acc.porTipo[e.motivo] || 0) + 1;
+      if(e.reintubacion){ acc.reint++; acc.reintPor[e.motivo] = (acc.reintPor[e.motivo] || 0) + 1; }
+    }
+    acc.dias += d;
+    return acc;
+  };
+  const de = (p, secs) => evs.filter(e => e.periodo === p && secs.includes(e.servicio));
+
+  const meses = periodos.map(p => {
+    const faltan = sectores.filter(sec => !dias.has(p + '|' + sec));
+    const d = faltan.length ? 0 : sectores.reduce((a, sec) => a + dias.get(p + '|' + sec), 0);
+    return Object.assign(sumar(vacio(), de(p, sectores), d), { periodo:p, ok:!faltan.length, faltan });
+  });
+
+  const total = vacio(), pendientes = { n:0, meses:[] };
+  for(const m of meses){
+    if(m.ok){
+      total.n += m.n; total.reint += m.reint; total.dias += m.dias;
+      for(const k in m.porTipo)  total.porTipo[k]  = (total.porTipo[k]  || 0) + m.porTipo[k];
+      for(const k in m.reintPor) total.reintPor[k] = (total.reintPor[k] || 0) + m.reintPor[k];
+    } else if(m.n){
+      pendientes.n += m.n; pendientes.meses.push(m.periodo);
+    }
+  }
+
+  // Cada sector se calcula sobre sus propios días, mes por mes.
+  const porSector = sectores.map(sec => {
+    const acc = Object.assign(vacio(), { sector:sec, faltan:[] });
+    for(const p of periodos){
+      const k = p + '|' + sec, lista = de(p, [sec]);
+      if(dias.has(k)) sumar(acc, lista, dias.get(k));
+      else if(lista.length) acc.faltan.push(p);
+    }
+    return acc;
+  });
+
+  return { meses, total, porSector, pendientes };
+}
+
+function claseTasa(r, meta){
+  if(r === null || meta === null || meta === undefined) return '';
+  return r < meta ? 'alto' : 'bajo';
+}
+const fmtTasa = r => r === null ? '—' : r.toFixed(1).replace('.', ',');
+const fmtMeta = m => Number(m).toLocaleString('es-AR', { maximumFractionDigits:1 });
+
+function pintarTasa(){
+  const desde = periodoDesde();
+  const s = $('fServicio').value;
+  const sectores = s ? [s]
+    : (bundle.sectores && bundle.sectores.length ? bundle.sectores
+       : [...new Set(tasaDenom.map(d => d.servicio))]);
+  const evs  = tasaEventos.filter(e => (!desde || e.periodo >= desde) && sectores.includes(e.servicio));
+  const dens = tasaDenom.filter(d => (!desde || d.periodo >= desde) && sectores.includes(d.servicio));
+
+  ver('cargando', false);
+  const hay = evs.length || dens.length;
+  ver('sinDatos', !hay);
+  ver('contenido', !!hay);
+  if(!hay) return;
+
+  const R = calcularTasa(evs, dens, sectores);
+  const porCada = Number(bundle.por_cada) || 1000;
+  const unidad = bundle.unidad || 'días';
+  const Unidad = unidad.charAt(0).toUpperCase() + unidad.slice(1);
+  const tasa = (n, d) => d > 0 ? n / d * porCada : null;
+
+  // Una columna por tasa: la total y una por cada tipo de evento.
+  const cols = [{ clave:null, nombre:'Total', meta:Number(bundle.meta) }]
+    .concat(tasaTipos.map(t => ({ clave:t.clave, nombre:t.texto,
+                                  meta: t.meta === null || t.meta === undefined ? null : Number(t.meta) })));
+  const nDe   = (acc, c) => c.clave ? (acc.porTipo[c.clave]  || 0) : acc.n;
+  const reDe  = (acc, c) => c.clave ? (acc.reintPor[c.clave] || 0) : acc.reint;
+
+  /* --- Tarjetas --- */
+  $('tarjetasTasa').innerHTML = cols.map(c => {
+    const n = nDe(R.total, c), r = tasa(n, R.total.dias), k = claseTasa(r, c.meta);
+    const estado = r === null ? `Todavía no hay ${unidad} cargados para calcularla`
+      : c.meta === null ? ''
+      : r < c.meta ? `Por debajo de la meta (menos de ${fmtMeta(c.meta)})`
+      : `Por encima de la meta (menos de ${fmtMeta(c.meta)})`;
+    const re = reDe(R.total, c);
+    return `<div class="tasa ${k}">
+      <h3>${c.clave ? c.nombre : bundle.nombre}</h3>
+      <b class="${k}">${fmtTasa(r)}</b>
+      <span class="u">por cada ${porCada.toLocaleString('es-AR')} ${unidad}</span>
+      <p class="estado ${k}">${estado}</p>
+      <p class="det">${n} ${n === 1 ? 'evento' : 'eventos'} en ${R.total.dias.toLocaleString('es-AR')} ${unidad}` +
+      (n ? ` · ${re} con reintubación inmediata` : '') + `</p>
+    </div>`;
+  }).join('');
+
+  let nota = `Tasa = eventos ÷ ${unidad} × ${porCada.toLocaleString('es-AR')}. ` +
+    `Entran solo los meses que ya tienen los ${unidad} cargados${s ? '' : ' en todos los sectores'}.`;
+  if(R.pendientes.n) nota += ` ${R.pendientes.n} ${R.pendientes.n === 1 ? 'evento queda' : 'eventos quedan'} afuera ` +
+    `hasta que se carguen los ${unidad} de ${R.pendientes.meses.map(nombreMes).join(', ')}.`;
+  $('notaTasas').textContent = nota;
+
+  /* --- Mes a mes y por sector: misma tabla, distinta primera columna --- */
+  const cabeza = primera => `<th>${primera}</th>` +
+    cols.filter(c => c.clave).map(c => `<th class="num">${c.nombre}</th>`).join('') +
+    `<th class="num">Total</th><th class="num">${Unidad}</th>` +
+    cols.map(c => `<th class="num">Tasa ${c.clave ? c.nombre.toLowerCase() : 'total'}</th>`).join('');
+  const fila = (primera, acc, ok, falta) => `<tr><td>${primera}</td>` +
+    cols.filter(c => c.clave).map(c => `<td class="num">${nDe(acc, c)}</td>`).join('') +
+    `<td class="num"><b>${acc.n}</b></td>` +
+    (ok ? `<td class="num">${acc.dias.toLocaleString('es-AR')}</td>` +
+          cols.map(c => { const r = tasa(nDe(acc, c), acc.dias);
+            return `<td class="num pct ${claseTasa(r, c.meta)}">${fmtTasa(r)}</td>`; }).join('')
+        : `<td class="num falta" colspan="${cols.length + 1}">${falta}</td>`) + '</tr>';
+
+  $('subMeses').textContent = `Eventos, ${unidad} y tasas de cada mes` + (s ? ` en ${s}` : ', sumando los sectores');
+  $('cabezaMeses').innerHTML = cabeza('Mes');
+  $('tablaMeses').innerHTML = R.meses.slice().reverse().map(m =>
+    fila(nombreMes(m.periodo), m, m.ok,
+      `falta cargar ${unidad}` + (m.faltan.length < sectores.length ? ` de ${m.faltan.join(', ')}` : ''))).join('');
+
+  $('subSector').textContent = `Tasas de cada sector en el período, sobre sus propios ${unidad}`;
+  $('porSector').innerHTML = `<div style="overflow-x:auto"><table style="min-width:420px">
+    <thead><tr>${cabeza('Sector')}</tr></thead>
+    <tbody>${R.porSector.map(g => fila(
+      g.sector + (g.faltan.length
+        ? `<br><span style="font-size:.72rem;color:var(--tinta-suave)">${g.faltan.length} ${g.faltan.length === 1 ? 'mes' : 'meses'} sin ${unidad}</span>` : ''),
+      g, g.dias > 0, `sin ${unidad} cargados`)).join('')}</tbody></table></div>`;
+
+  /* --- Turno: eventos, sin tasa --- */
+  $('subTurno').textContent = `Eventos registrados por turno. Sin tasa: los ${unidad} no se cargan por turno.`;
+  $('cabezaTurno').innerHTML = '<th>Turno</th>' +
+    tasaTipos.map(t => `<th class="num">${t.texto}</th>`).join('') +
+    '<th class="num">Total</th><th class="num">Reintubación</th>';
+  const turnos = [...new Set(evs.map(e => e.turno))];
+  $('tablaTurno').innerHTML = turnos.map(tu => {
+    const de = evs.filter(e => e.turno === tu);
+    return { tu, de };
+  }).sort((a,b) => b.de.length - a.de.length).map(({ tu, de }) => `<tr><td>${tu}</td>` +
+    tasaTipos.map(t => `<td class="num">${de.filter(e => e.motivo === t.clave).length}</td>`).join('') +
+    `<td class="num"><b>${de.length}</b></td><td class="num">${de.filter(e => e.reintubacion).length}</td></tr>`
+  ).join('') || `<tr><td colspan="${tasaTipos.length + 3}" class="falta">Sin eventos en el período.</td></tr>`;
+
+  /* --- Cama: eventos, sin tasa --- */
+  const camas = [...evs.reduce((m, e) => e.cama ? m.set(e.cama, (m.get(e.cama) || 0) + 1) : m, new Map())]
+    .map(([nombre, n]) => ({ nombre, n })).sort((a,b) => b.n - a.n || ordenCama(a.nombre, b.nombre));
+  const tope = Math.max(1, ...camas.map(c => c.n));
+  $('subCamas').textContent = camas.length > 12
+    ? `Las 12 camas con más eventos, de ${camas.length}. Sin tasa: los ${unidad} no se cargan por cama.`
+    : `Eventos registrados en cada cama. Sin tasa: los ${unidad} no se cargan por cama.`;
+  $('porCama').innerHTML = camas.slice(0, 12).map(c => `
+    <div class="barra">
+      <div class="fila1"><span>${c.nombre}</span><b>${c.n}</b></div>
+      <div class="pista"><i class="medio" style="width:${c.n / tope * 100}%"></i></div>
+    </div>`).join('') || '<p class="sub">Sin eventos en el período.</p>';
+
+  /* --- Evolución de la tasa total --- */
+  $('subTendencia').textContent = `Tasa total por cada ${porCada.toLocaleString('es-AR')} ${unidad}, mes a mes. ` +
+    `La línea punteada es la meta; los meses sin ${unidad} cargados quedan sin punto.`;
+  dibujarTendenciaTasa(R.meses.slice(-12).map(m => ({ mes:m.periodo, r: m.ok ? tasa(m.n, m.dias) : null })),
+                       Number(bundle.meta));
+
+  $('pieActualizado').textContent =
+    'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function dibujarTendenciaTasa(serie, meta){
+  const svg = $('tendencia');
+  const W = 700, H = 210, mx = 36, my = 30;
+  const valores = serie.map(s => s.r).filter(r => r !== null);
+  const tope = Math.max(meta * 1.5, 1, ...valores) * 1.15;
+  const x = i => serie.length === 1 ? W/2 : mx + i * (W - mx*2) / (serie.length - 1);
+  const y = v => H - my - (v / tope) * (H - my*2);
+
+  let out = '';
+  [0, Math.round(tope)].forEach(v => {
+    out += `<line class="eje" x1="${mx-6}" y1="${y(v)}" x2="${W-8}" y2="${y(v)}"></line>`;
+    out += `<text class="etiqueta" x="0" y="${y(v)+4}">${v}</text>`;
+  });
+  out += `<line class="meta" x1="${mx-6}" y1="${y(meta)}" x2="${W-8}" y2="${y(meta)}"></line>`;
+  out += `<text class="etiqueta meta" x="${W-8}" y="${y(meta)-5}" text-anchor="end">meta: menos de ${fmtMeta(meta)}</text>`;
+
+  // La línea se corta en los meses sin días cargados.
+  const tramos = []; let tramo = [];
+  serie.forEach((s, i) => { if(s.r === null){ if(tramo.length) tramos.push(tramo); tramo = []; } else tramo.push(i); });
+  if(tramo.length) tramos.push(tramo);
+  tramos.filter(t => t.length > 1).forEach(t => {
+    out += `<path class="linea" d="${t.map((i, j) => `${j ? 'L' : 'M'}${x(i)},${y(serie[i].r)}`).join(' ')}"></path>`;
+  });
+
+  serie.forEach((s, i) => {
+    const [a, mm] = s.mes.split('-');
+    out += `<text class="etiqueta" x="${x(i)}" y="${H-6}" text-anchor="middle">${mm}/${a.slice(2)}</text>`;
+    if(s.r === null){
+      out += `<text class="etiqueta" x="${x(i)}" y="${y(0)-8}" text-anchor="middle">s/d</text>`;
+    } else {
+      out += `<circle class="punto ${claseTasa(s.r, meta)}" cx="${x(i)}" cy="${y(s.r)}" r="5"></circle>`;
+      out += `<text class="valor" x="${x(i)}" y="${y(s.r)-12}" text-anchor="middle">${fmtTasa(s.r)}</text>`;
+    }
+  });
+  svg.innerHTML = out;
 }
 
 // Los ítems se agrupan por su texto; 'nc' no entra ni en el numerador ni en el denominador.
@@ -1261,7 +1506,24 @@ async function actualizar(){
                 (bundle.tipo === 'compuesto' && bundle.incluye_hdm);
   if(bundle.propio || cruza) filas = await descargar();
 
-  if(bundle.tipo === 'compuesto'){
+  if(bundle.tipo === 'tasa'){
+    const [ev, den, tipos] = await Promise.all([
+      bajarTodo('hdm_publico_tasas',
+        'bundle,fecha,periodo,turno,servicio,cama,motivo,motivo_texto,reintubacion',
+        { columna:'bundle', valor:bundle.clave }),
+      db.from('hdm_publico_mensual')
+        .select('periodo,servicio,item_clave,valor')
+        .eq('bundle', bundle.denominador_bundle)
+        .in('item_clave', bundle.denominador_items || [])
+        .order('periodo'),
+      db.from('hdm_bundle_items')
+        .select('clave,texto,orden,meta')
+        .eq('bundle', bundle.clave).eq('tipo', 'motivo').eq('activo', true).order('orden')
+    ]);
+    tasaEventos = ev;
+    tasaDenom = den.data || [];
+    tasaTipos = tipos.data || [];
+  } else if(bundle.tipo === 'compuesto'){
     registros = await bajarTodo('hdm_publico_registros',
       'id,bundle,fecha,periodo,turno,servicio,cama,items_si,items_no,items_nc,cumple',
       { columna:'bundle', valor:bundle.miembros });

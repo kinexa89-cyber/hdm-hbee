@@ -347,6 +347,26 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
           </div>
         </div>
 
+        <div class="bloque oculto" id="bloqueTasa">
+          <h3 id="tituloTasa">Evento</h3>
+          <p id="pistaTasa">Se carga solo cuando sucede.</p>
+          <div class="campo">
+            <label for="inFechaTasa">Fecha</label>
+            <input id="inFechaTasa" type="date">
+          </div>
+          <div class="item">
+            <h4>¿Qué tipo fue?</h4>
+            <div class="grilla" id="grillaTipoTasa"></div>
+          </div>
+          <div class="item">
+            <h4>¿Requirió reintubación inmediata?</h4>
+            <div class="grilla" id="grillaReintub">
+              <button class="opcion" data-valor="si">Sí</button>
+              <button class="opcion" data-valor="no">No</button>
+            </div>
+          </div>
+        </div>
+
         <div class="bloque oculto" id="bloqueItems">
           <h3 id="tituloItems">Controles</h3>
           <p id="pistaItems">Marcá cada punto. Están todos, así que ninguno puede quedar sin responder.</p>
@@ -523,6 +543,7 @@ let bundle = null;        // el que está cargando ahora
 let itemsBundle = [];     // ítems del bundle, traídos de la base
 let selItems = {};        // clave del ítem -> 'si' | 'no' | 'nc'
 let selEvento = { exito:null, motivo:null };
+let selTasa = { motivo:null, reintub:null };
 let camposMes = [];       // los números que pide un indicador mensual
 let motivos = [];         // motivos de falla de un indicador por evento
 let sectoresTodos = [];   // todos los sectores activos, para recortarlos por bundle
@@ -749,11 +770,13 @@ async function elegirBundle(clave){
   ver('bloqueMomentos',  bundle.propio);
   ver('bloqueItems',     tipo === 'checklist' && !bundle.propio);
   ver('bloqueEvento',    tipo === 'evento');
+  ver('bloqueTasa',      tipo === 'tasa');
   $('btnGuardar').textContent =
-    tipo === 'evento' ? 'Guardar' : bundle.propio ? 'Guardar observación' : 'Guardar control';
+    tipo === 'evento' || tipo === 'tasa' ? 'Guardar' : bundle.propio ? 'Guardar observación' : 'Guardar control';
 
   if(tipo === 'checklist' && !bundle.propio) await cargarItems();
   if(tipo === 'evento') await prepararEvento();
+  if(tipo === 'tasa') await prepararTasa();
 
   ver('pasoBundle', false); ver('pasoCarga', false);
   ver('pasoMensual', tipo === 'mensual');
@@ -974,6 +997,72 @@ async function guardarEvento(){
   window.scrollTo({ top:0, behavior:'smooth' });
 }
 
+/* ================= Indicadores de tasa (se cargan cuando suceden) ================= */
+async function prepararTasa(){
+  $('tituloTasa').textContent = bundle.nombre;
+  $('pistaTasa').textContent = 'Se carga solo cuando sucede. Si no hubo ninguna, no hay nada que cargar.';
+  $('inFechaTasa').value = hoyISO();
+  $('inFechaTasa').max = hoyISO();
+
+  const { data } = await db.from('hdm_bundle_items')
+    .select('clave,texto,orden')
+    .eq('bundle', bundle.clave).eq('tipo', 'motivo').eq('activo', true).order('orden');
+  motivos = data || [];
+  $('grillaTipoTasa').innerHTML = motivos
+    .map(m => `<button class="opcion" data-valor="${m.clave}">${m.texto}</button>`).join('');
+  selTasa = { motivo:null, reintub:null };
+}
+
+$('grillaTipoTasa').addEventListener('click', e => {
+  const b = e.target.closest('.opcion'); if(!b) return;
+  elegir($('grillaTipoTasa'), b);
+  selTasa.motivo = b.dataset.valor;
+});
+
+$('grillaReintub').addEventListener('click', e => {
+  const b = e.target.closest('.opcion'); if(!b) return;
+  elegir($('grillaReintub'), b);
+  selTasa.reintub = b.dataset.valor === 'si';
+});
+
+async function guardarTasa(forzar){
+  if(!selTasa.motivo) return mostrarAviso('avisoCarga','Falta marcar qué tipo fue.');
+  if(selTasa.reintub === null) return mostrarAviso('avisoCarga','Falta marcar si requirió reintubación inmediata.');
+
+  const fecha = $('inFechaTasa').value || hoyISO();
+  const camaCompleta = cama ? `${ctx.servicio} ${cama}` : null;
+
+  $('btnGuardar').disabled = true; $('btnGuardar').textContent = 'Guardando…';
+  const { error } = await db.rpc('hdm_guardar_tasa', {
+    p_bundle: bundle.clave,
+    p_fecha: fecha,
+    p_turno: ctx.turno,
+    p_servicio: ctx.servicio,
+    p_cama: camaCompleta,
+    p_motivo: selTasa.motivo,
+    p_reintubacion: selTasa.reintub,
+    p_observacion: $('inObservacion').value.trim() || null,
+    p_forzar: !!forzar
+  });
+  $('btnGuardar').disabled = false; $('btnGuardar').textContent = 'Guardar';
+
+  if(error){
+    if(error.message.includes('YA_CARGADO')){
+      // Es raro, pero puede pasar dos veces el mismo día: se pregunta, no se bloquea.
+      if(confirm(`${camaCompleta} ya tiene una ${bundle.nombre.toLowerCase()} cargada el ${fechaLegible(fecha)}.\n\n` +
+                 `¿Estás seguro de que querés cargar otro evento?`))
+        return guardarTasa(true);
+      return;
+    }
+    return mostrarAviso('avisoCarga', 'No se pudo guardar: ' + error.message);
+  }
+
+  limpiarFormulario();
+  toast('Guardado');
+  refrescarCargas();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
 /* ---- Contexto ---- */
 $('btnComenzar').addEventListener('click', () => {
   const turno = $('inTurno').value, servicio = $('inServicio').value;
@@ -1124,6 +1213,7 @@ $('btnGuardar').addEventListener('click', async () => {
   ocultarAviso('avisoCarga');
   if(camasDe(ctx.servicio) && !cama) return mostrarAviso('avisoCarga','Falta marcar en qué cama estás observando.');
   if(bundle.tipo === 'evento') return guardarEvento();
+  if(bundle.tipo === 'tasa') return guardarTasa(false);
   if(!bundle.propio) return guardarControl();
   if(sel.grupo && !sel.estamento) return mostrarAviso('avisoCarga',`Falta elegir cuál dentro de ${sel.grupo}.`);
   if(!sel.estamento) return mostrarAviso('avisoCarga','Falta marcar de qué servicio es la persona observada.');
@@ -1205,6 +1295,7 @@ function limpiarFormulario(){
   document.querySelectorAll('[data-rol="tecnica-caja"]').forEach(c => c.classList.add('oculto'));
   selItems = {};
   selEvento = { exito:null, motivo:null };
+  selTasa = { motivo:null, reintub:null };
   ver('cajaMotivo', false);
   $('inObservacion').value = '';
 }
@@ -1219,9 +1310,9 @@ async function refrescarCargas(){
     ? await db.from('hdm_observaciones')
         .select('servicio,cama,estamento,created_at')
         .eq('fecha', hoyISO()).order('created_at', { ascending:false }).limit(30)
-    : bundle.tipo === 'evento'
+    : bundle.tipo === 'evento' || bundle.tipo === 'tasa'
       ? await db.from('hdm_eventos')
-          .select('servicio,cama,exito,creado')
+          .select('servicio,cama,exito,motivo,creado')
           .eq('bundle', bundle.clave)
           .eq('fecha', hoyISO()).order('creado', { ascending:false }).limit(30)
       : await db.from('hdm_registros')
@@ -1232,7 +1323,7 @@ async function refrescarCargas(){
 
   const [uno, varios, nada] = bundle.propio
     ? ['observación cargada hoy', 'observaciones cargadas hoy', 'Todavía no cargaste ninguna hoy.']
-    : bundle.tipo === 'evento'
+    : bundle.tipo === 'evento' || bundle.tipo === 'tasa'
       ? ['carga hecha hoy', 'cargas hechas hoy', 'Todavía no cargaste ninguna hoy.']
       : ['control cargado hoy', 'controles cargados hoy', 'Todavía no cargaste ninguno hoy.'];
   $('contador').textContent = data.length;
@@ -1244,6 +1335,8 @@ async function refrescarCargas(){
       .toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
     const texto = bundle.propio ? `${o.estamento} · ${o.servicio}`
       : bundle.tipo === 'evento' ? `${o.cama || o.servicio} · ${o.exito ? 'exitosa' : 'fallida'}`
+      : bundle.tipo === 'tasa'
+        ? `${o.cama || o.servicio} · ${(motivos.find(m => m.clave === o.motivo) || {}).texto || ''}`
       : (o.cama || o.servicio);
     return `<li><div>${texto}</div><span>${h}</span></li>`;
   }).join('');
@@ -1380,16 +1473,20 @@ async function cargarAjustes(){
 /* ---- Cuánto hay cargado de cada indicador ---- */
 async function cargarTotales(){
   const filas = [];
+  const contar = tabla => db.from(tabla).select('*', { count:'exact', head:true });
   for(const b of catalogo){
-    // Higiene de manos tiene su propia tabla; el resto vive en hdm_registros.
-    const { count } = b.propio
-      ? await db.from('hdm_publico').select('*', { count:'exact', head:true })
-      : await db.from('hdm_publico_registros').select('*', { count:'exact', head:true })
-          .eq('bundle', b.clave);
+    // Cada tipo de indicador guarda sus datos en un lugar distinto.
+    const tipo = b.tipo || 'checklist';
+    const { count } = b.propio ? await contar('hdm_publico')
+      : tipo === 'mensual' ? await contar('hdm_mensual').eq('bundle', b.clave)
+      : tipo === 'evento' || tipo === 'tasa' ? await contar('hdm_eventos').eq('bundle', b.clave)
+      : await contar('hdm_publico_registros').eq('bundle', b.clave);
     const n = count ?? 0;
-    const que = b.propio
-      ? (n === 1 ? 'observación' : 'observaciones')
-      : (n === 1 ? 'control' : 'controles');
+    const [uno, varios] = b.propio ? ['observación', 'observaciones']
+      : tipo === 'mensual' ? ['mes cargado', 'meses cargados']
+      : tipo === 'evento' || tipo === 'tasa' ? ['evento', 'eventos']
+      : ['control', 'controles'];
+    const que = n === 1 ? uno : varios;
     filas.push(`<div class="resumen" style="margin:0 0 6px;padding:0;border:0">
       <b>${n}</b><span>${que} · ${b.nombre}</span></div>`);
   }
@@ -1399,7 +1496,7 @@ async function cargarTotales(){
 /* ---- Accesos ---- */
 async function cargarCatalogo(){
   const { data } = await db.from('hdm_bundles')
-    .select('clave,nombre,propio,orden').eq('activo', true).order('orden');
+    .select('clave,nombre,propio,orden,tipo').eq('activo', true).order('orden');
   catalogo = data || [];
   $('inQueBorrar').innerHTML = catalogo
     .map(b => `<option value="${b.clave}">${b.nombre}</option>`).join('');
