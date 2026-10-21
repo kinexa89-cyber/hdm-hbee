@@ -358,8 +358,8 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
             <h4>¿Qué tipo fue?</h4>
             <div class="grilla" id="grillaTipoTasa"></div>
           </div>
-          <div class="item">
-            <h4>¿Requirió reintubación inmediata?</h4>
+          <div class="item" id="cajaExtra">
+            <h4 id="preguntaExtra">¿Requirió reintubación inmediata?</h4>
             <div class="grilla" id="grillaReintub">
               <button class="opcion" data-valor="si">Sí</button>
               <button class="opcion" data-valor="no">No</button>
@@ -1000,14 +1000,24 @@ async function guardarEvento(){
 /* ================= Indicadores de tasa (se cargan cuando suceden) ================= */
 async function prepararTasa(){
   $('tituloTasa').textContent = bundle.nombre;
-  $('pistaTasa').textContent = 'Se carga solo cuando sucede. Si no hubo ninguna, no hay nada que cargar.';
   $('inFechaTasa').value = hoyISO();
   $('inFechaTasa').max = hoyISO();
 
-  const { data } = await db.from('hdm_bundle_items')
-    .select('clave,texto,orden')
-    .eq('bundle', bundle.clave).eq('tipo', 'motivo').eq('activo', true).order('orden');
+  // La pregunta de seguimiento es de cada indicador (reintubación, drenaje pleural…);
+  // si el indicador no tiene ninguna, el bloque no se muestra.
+  const [{ data }, { data: def }] = await Promise.all([
+    db.from('hdm_bundle_items')
+      .select('clave,texto,orden')
+      .eq('bundle', bundle.clave).eq('tipo', 'motivo').eq('activo', true).order('orden'),
+    db.from('hdm_bundles')
+      .select('descripcion,pregunta_extra').eq('clave', bundle.clave).maybeSingle()
+  ]);
   motivos = data || [];
+  bundle.pregunta_extra = def ? def.pregunta_extra : null;
+  $('pistaTasa').textContent = (def && def.descripcion ? def.descripcion + ' ' : '') +
+    'Se carga solo cuando sucede. Si no hubo ninguno, no hay nada que cargar.';
+  $('preguntaExtra').textContent = bundle.pregunta_extra || '';
+  ver('cajaExtra', !!bundle.pregunta_extra);
   $('grillaTipoTasa').innerHTML = motivos
     .map(m => `<button class="opcion" data-valor="${m.clave}">${m.texto}</button>`).join('');
   selTasa = { motivo:null, reintub:null };
@@ -1027,7 +1037,8 @@ $('grillaReintub').addEventListener('click', e => {
 
 async function guardarTasa(forzar){
   if(!selTasa.motivo) return mostrarAviso('avisoCarga','Falta marcar qué tipo fue.');
-  if(selTasa.reintub === null) return mostrarAviso('avisoCarga','Falta marcar si requirió reintubación inmediata.');
+  if(bundle.pregunta_extra && selTasa.reintub === null)
+    return mostrarAviso('avisoCarga', `Falta responder: ${bundle.pregunta_extra}`);
 
   const fecha = $('inFechaTasa').value || hoyISO();
   const camaCompleta = cama ? `${ctx.servicio} ${cama}` : null;
@@ -1040,7 +1051,7 @@ async function guardarTasa(forzar){
     p_servicio: ctx.servicio,
     p_cama: camaCompleta,
     p_motivo: selTasa.motivo,
-    p_reintubacion: selTasa.reintub,
+    p_reintubacion: bundle.pregunta_extra ? selTasa.reintub : null,
     p_observacion: $('inObservacion').value.trim() || null,
     p_forzar: !!forzar
   });
@@ -1049,7 +1060,7 @@ async function guardarTasa(forzar){
   if(error){
     if(error.message.includes('YA_CARGADO')){
       // Es raro, pero puede pasar dos veces el mismo día: se pregunta, no se bloquea.
-      if(confirm(`${camaCompleta} ya tiene una ${bundle.nombre.toLowerCase()} cargada el ${fechaLegible(fecha)}.\n\n` +
+      if(confirm(`${camaCompleta} ya tiene un evento de ${bundle.nombre.toLowerCase()} cargado el ${fechaLegible(fecha)}.\n\n` +
                  `¿Estás seguro de que querés cargar otro evento?`))
         return guardarTasa(true);
       return;

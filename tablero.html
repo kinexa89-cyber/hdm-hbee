@@ -671,7 +671,7 @@ function dibujarTendencia(ops){
 async function cargarCatalogo(){
   const [{ data }, { data: grupos }] = await Promise.all([
     db.from('hdm_bundles')
-      .select('clave,nombre,descripcion,propio,pide_cama,sectores,umbral_medio,meta,umbral_oro,orden,tipo,sentido,unidad,grupo,denominador_bundle,denominador_items,por_cada')
+      .select('clave,nombre,descripcion,propio,pide_cama,sectores,umbral_medio,meta,umbral_oro,orden,tipo,sentido,unidad,grupo,denominador_bundle,denominador_items,por_cada,extra_corto')
       .eq('activo', true).order('orden'),
     db.from('hdm_grupos')
       .select('clave,nombre,descripcion,incluye_hdm,umbral_medio,meta,umbral_oro,orden')
@@ -1132,6 +1132,8 @@ function pintarTasa(){
   const unidad = bundle.unidad || 'días';
   const Unidad = unidad.charAt(0).toUpperCase() + unidad.slice(1);
   const tasa = (n, d) => d > 0 ? n / d * porCada : null;
+  // Etiqueta de la pregunta de seguimiento de este indicador (sin ella, no se muestra).
+  const extra = bundle.extra_corto || '';
 
   // Una columna por tasa: la total y una por cada tipo de evento.
   const cols = [{ clave:null, nombre:'Total', meta:Number(bundle.meta) }]
@@ -1154,7 +1156,7 @@ function pintarTasa(){
       <span class="u">por cada ${porCada.toLocaleString('es-AR')} ${unidad}</span>
       <p class="estado ${k}">${estado}</p>
       <p class="det">${n} ${n === 1 ? 'evento' : 'eventos'} en ${R.total.dias.toLocaleString('es-AR')} ${unidad}` +
-      (n ? ` · ${re} con reintubación inmediata` : '') + `</p>
+      (n && extra ? ` · ${re} con ${extra.toLowerCase()}` : '') + `</p>
     </div>`;
   }).join('');
 
@@ -1195,15 +1197,16 @@ function pintarTasa(){
   $('subTurno').textContent = `Eventos registrados por turno. Sin tasa: los ${unidad} no se cargan por turno.`;
   $('cabezaTurno').innerHTML = '<th>Turno</th>' +
     tasaTipos.map(t => `<th class="num">${t.texto}</th>`).join('') +
-    '<th class="num">Total</th><th class="num">Reintubación</th>';
+    '<th class="num">Total</th>' + (extra ? `<th class="num">${extra}</th>` : '');
   const turnos = [...new Set(evs.map(e => e.turno))];
   $('tablaTurno').innerHTML = turnos.map(tu => {
     const de = evs.filter(e => e.turno === tu);
     return { tu, de };
   }).sort((a,b) => b.de.length - a.de.length).map(({ tu, de }) => `<tr><td>${tu}</td>` +
     tasaTipos.map(t => `<td class="num">${de.filter(e => e.motivo === t.clave).length}</td>`).join('') +
-    `<td class="num"><b>${de.length}</b></td><td class="num">${de.filter(e => e.reintubacion).length}</td></tr>`
-  ).join('') || `<tr><td colspan="${tasaTipos.length + 3}" class="falta">Sin eventos en el período.</td></tr>`;
+    `<td class="num"><b>${de.length}</b></td>` +
+    (extra ? `<td class="num">${de.filter(e => e.reintubacion).length}</td>` : '') + '</tr>'
+  ).join('') || `<tr><td colspan="${tasaTipos.length + (extra ? 3 : 2)}" class="falta">Sin eventos en el período.</td></tr>`;
 
   /* --- Cama: eventos, sin tasa --- */
   const camas = [...evs.reduce((m, e) => e.cama ? m.set(e.cama, (m.get(e.cama) || 0) + 1) : m, new Map())]
