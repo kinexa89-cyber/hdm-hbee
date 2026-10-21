@@ -245,6 +245,20 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
       <span><i class="r"></i> Rojo: adherencia baja, menos de 60%</span>
     </div>
 
+    <!-- 1b. Resultado del bundle: la tasa que el bundle busca bajar (solo bundle entero) -->
+    <section class="panel oculto" id="panelResultado" style="margin-bottom:18px">
+      <h2 id="tituloResultado">Resultado</h2>
+      <p class="sub" id="subResultado">—</p>
+      <div class="tasas" id="tarjetaResultado" style="grid-template-columns:1fr"></div>
+      <div style="overflow-x:auto;margin-top:16px">
+        <table style="min-width:360px">
+          <thead><tr id="cabezaResultado"></tr></thead>
+          <tbody id="tablaResultado"></tbody>
+        </table>
+      </div>
+      <p class="notaRanking" id="notaResultado"></p>
+    </section>
+
     <!-- 2. Ranking de servicios -->
     <section class="panel competencia" id="panelCompetencia">
       <h2>Ranking de servicios</h2>
@@ -395,6 +409,7 @@ let compuestos = [];        // bundle entero: una fila por cama-día
 let tasaEventos = [];       // eventos de un indicador de tasa
 let tasaDenom = [];         // días del conteo mensual que hace de denominador
 let tasaTipos = [];         // tipos de evento de la tasa, con su meta
+let resultado = null;       // tasa de resultado de un bundle entero: { def, evs, dens }
 let eventos = [];           // eventos sueltos (extubaciones, por ejemplo)
 let mensuales = [];         // conteos cargados mes a mes
 let catalogo = [];          // indicadores activos
@@ -674,7 +689,7 @@ async function cargarCatalogo(){
       .select('clave,nombre,descripcion,propio,pide_cama,sectores,umbral_medio,meta,umbral_oro,orden,tipo,sentido,unidad,grupo,denominador_bundle,denominador_items,por_cada,extra_corto')
       .eq('activo', true).order('orden'),
     db.from('hdm_grupos')
-      .select('clave,nombre,descripcion,incluye_hdm,umbral_medio,meta,umbral_oro,orden')
+      .select('clave,nombre,descripcion,incluye_hdm,umbral_medio,meta,umbral_oro,orden,tasa_resultado')
       .eq('activo', true).order('orden')
   ]);
   const sueltos = data || [];
@@ -747,6 +762,7 @@ async function elegirBundle(clave){
   ver('fEstamento',       bundle.propio);
   ver('panelItems',       compuesto || (tipo === 'checklist' && !bundle.propio && !deGrupo));
   ver('panelFaltantes',   compuesto);
+  ver('panelResultado',   compuesto && !!bundle.tasa_resultado);
   ver('panelCruce',       tipo === 'checklist' && !bundle.propio && bundle.pide_cama && !deGrupo);
   ver('panelMotivos',     tipo === 'evento');
   ver('panelDesglose',    conteo);
@@ -1022,6 +1038,8 @@ function pintarCompuesto(){
         : `Faltan ${Math.max(0, Math.ceil((META/100) * completas.length - si))} camas-día cumplidas para llegar al ${META}%.`;
   $('veredicto').className = 'veredicto ' + c;
 
+  pintarResultado(completas);
+
   $('subItems').textContent = completas.length
     ? 'Cada punto sobre las camas-día completas, de mayor a menor. Lo que no corresponde queda afuera. Para ver todos los controles de un punto, andá a su pestaña.'
     : 'Va a aparecer cuando haya camas-día con todos los puntos cargados.';
@@ -1229,6 +1247,67 @@ function pintarTasa(){
 
   $('pieActualizado').textContent =
     'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+/* ---------- Resultado de un bundle entero ----------
+   Pone al lado del cumplimiento del bundle la tasa que ese bundle busca bajar
+   (bundle NAVM -> tasa de NAVM), con el mismo período y el mismo sector. */
+function pintarResultado(completas){
+  if(!resultado) return ver('panelResultado', false);
+  ver('panelResultado', true);
+
+  const def = resultado.def;
+  const desde = periodoDesde();
+  const s = $('fServicio').value;
+  const sectores = s ? [s]
+    : (def.sectores && def.sectores.length ? def.sectores : [...new Set(resultado.dens.map(d => d.servicio))]);
+  const dentro = x => (!desde || x.periodo >= desde) && sectores.includes(x.servicio);
+  const R = calcularTasa(resultado.evs.filter(dentro), resultado.dens.filter(dentro), sectores);
+
+  const porCada = Number(def.por_cada) || 1000;
+  const meta = Number(def.meta);
+  const unidad = def.unidad || 'días';
+  const tasa = (n, d) => d > 0 ? n / d * porCada : null;
+  const r = tasa(R.total.n, R.total.dias), k = claseTasa(r, meta);
+
+  $('tituloResultado').textContent = 'Resultado: ' + def.nombre.toLowerCase();
+  $('subResultado').textContent =
+    `El bundle se hace para bajar esta tasa. Mismo período${s ? ' y mismo sector' : ' y mismos sectores'} que arriba.`;
+
+  $('tarjetaResultado').innerHTML = `<div class="tasa ${k}">
+    <h3>${def.nombre}</h3>
+    <b class="${k}">${fmtTasa(r)}</b>
+    <span class="u">por cada ${porCada.toLocaleString('es-AR')} ${unidad}</span>
+    <p class="estado ${k}">${r === null ? `Todavía no hay ${unidad} cargados para calcularla`
+      : r < meta ? `Por debajo de la meta (menos de ${fmtMeta(meta)})` : `Por encima de la meta (menos de ${fmtMeta(meta)})`}</p>
+    <p class="det">${R.total.n} ${R.total.n === 1 ? 'evento' : 'eventos'} en ${R.total.dias.toLocaleString('es-AR')} ${unidad}</p>
+  </div>`;
+
+  // Mes a mes: cumplimiento del bundle entero contra la tasa del mismo mes.
+  const adh = new Map();
+  for(const x of completas){
+    if(!adh.has(x.periodo)) adh.set(x.periodo, { n:0, si:0 });
+    const g = adh.get(x.periodo); g.n++; if(x.higienizo) g.si++;
+  }
+  const porMes = new Map(R.meses.map(m => [m.periodo, m]));
+  const periodos = [...new Set([...adh.keys(), ...porMes.keys()])].sort().slice(-12).reverse();
+
+  $('cabezaResultado').innerHTML =
+    `<th>Mes</th><th class="num">Bundle completo</th><th class="num">${def.nombre}</th>`;
+  $('tablaResultado').innerHTML = periodos.map(per => {
+    const a = adh.get(per), p = a ? pct(a.si, a.n) : null;
+    const m = porMes.get(per);
+    const rm = m && m.ok ? tasa(m.n, m.dias) : null;
+    return `<tr><td>${nombreMes(per)}</td>
+      ${a ? `<td class="num pct ${clase(p)}">${fmt(p)}</td>` : '<td class="num falta">sin controles</td>'}
+      ${m && m.ok ? `<td class="num pct ${claseTasa(rm, meta)}">${fmtTasa(rm)}</td>`
+                  : `<td class="num falta">${m && m.n ? `${m.n} sin ${unidad}` : `sin ${unidad}`}</td>`}
+    </tr>`;
+  }).join('') || '<tr><td colspan="3" class="falta">Sin datos en el período.</td></tr>';
+
+  $('notaResultado').textContent =
+    `Tasa = eventos ÷ ${unidad} × ${porCada.toLocaleString('es-AR')}. Entran solo los meses con los ${unidad} cargados. ` +
+    'Que los dos números se muevan juntos no prueba que uno cause el otro, pero si la adherencia sube y la tasa no baja, vale la pena mirar.';
 }
 
 function dibujarTendenciaTasa(serie, meta){
@@ -1535,6 +1614,21 @@ async function actualizar(){
       'id,bundle,fecha,periodo,turno,servicio,cama,items_si,items_no,items_nc,cumple',
       { columna:'bundle', valor:bundle.miembros });
     compuestos = armarCompuesto(registros, filas);
+    // Si el bundle tiene una tasa de resultado (NAVM), se baja con su denominador.
+    resultado = null;
+    const def = bundle.tasa_resultado && catalogo.find(c => c.clave === bundle.tasa_resultado);
+    if(def){
+      const [ev, den] = await Promise.all([
+        bajarTodo('hdm_publico_tasas', 'bundle,fecha,periodo,turno,servicio,cama,motivo',
+                  { columna:'bundle', valor:def.clave }),
+        db.from('hdm_publico_mensual')
+          .select('periodo,servicio,item_clave,valor')
+          .eq('bundle', def.denominador_bundle)
+          .in('item_clave', def.denominador_items || [])
+          .order('periodo')
+      ]);
+      resultado = { def, evs:ev, dens:den.data || [] };
+    }
   } else if(bundle.tipo === 'evento'){
     eventos = await bajarTodo('hdm_publico_eventos',
       'bundle,fecha,periodo,turno,servicio,cama,exito,motivo,motivo_texto',
