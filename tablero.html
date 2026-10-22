@@ -796,14 +796,19 @@ async function elegirBundle(clave){
     : 'En qué sector del hospital se observó';
   $('thTotal').textContent = bundle.propio ? 'Oportunidades' : tipo === 'evento' ? 'Casos' : 'Controles';
   $('thBien').textContent  = bundle.propio ? 'Se higienizó'
-    : cumpleEv ? (bundle.etiqueta_si || 'Cumplen') : tipo === 'evento' ? 'Fallas' : 'Cumplen';
+    : cumpleEv ? (bundle.etiqueta_si || 'Cumplen')
+    : tipo === 'evento' ? (bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? bundle.etiqueta_no : 'Fallas') : 'Cumplen';
   $('thPct').textContent   = bundle.propio ? 'Adherencia'
-    : cumpleEv ? 'Cumplimiento' : tipo === 'evento' ? 'Falla' : 'Cumplimiento';
+    : cumpleEv ? 'Cumplimiento'
+    : tipo === 'evento' ? (bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? 'Porcentaje' : 'Falla') : 'Cumplimiento';
   $('glosaHero').textContent =
     bundle.propio
       ? 'Porcentaje de oportunidades observadas en las que el profesional se higienizó las manos. Cada observación aporta hasta dos oportunidades: antes del contacto con el paciente y después del contacto con su entorno.'
       : cumpleEv
         ? `Porcentaje de casos con criterio en los que se cumplió la conducta (${(bundle.etiqueta_si || 'cumple').toLowerCase()}), sobre el total registrado.` +
+          (bundle.descripcion ? ' ' + bundle.descripcion : '')
+      : tipo === 'evento' && bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida'
+        ? `Porcentaje de pacientes registrados ${bundle.etiqueta_no.toLowerCase()}, sobre el total cargado. Acá el número bueno es el bajo, así que el semáforo se lee al revés.` +
           (bundle.descripcion ? ' ' + bundle.descripcion : '')
       : tipo === 'evento'
         ? 'Porcentaje de casos que terminaron en falla sobre el total registrado. Acá el número bueno es el bajo, así que el semáforo se lee al revés que en los demás indicadores.'
@@ -821,7 +826,8 @@ async function elegirBundle(clave){
     : compuesto ? 'No hay controles de ninguno de los puntos del bundle con esos filtros.'
     : 'No hay controles registrados con esos filtros.';
   $('subTendencia').textContent =
-    (bundle.propio ? 'Adherencia' : cumpleEv ? 'Cumplimiento' : tipo === 'evento' ? 'Porcentaje de falla'
+    (bundle.propio ? 'Adherencia' : cumpleEv ? 'Cumplimiento'
+      : tipo === 'evento' ? (bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? 'Porcentaje ' + bundle.etiqueta_no.toLowerCase() : 'Porcentaje de falla')
       : compuesto ? 'Cumplimiento del bundle entero' : deGrupo ? 'Cumplimiento' : 'Cumplimiento del bundle') +
     ' mes a mes, últimos 12 meses. La línea punteada es el objetivo.';
 
@@ -1417,8 +1423,11 @@ function pintarEvento(){
 
   $('adherencia').textContent = fmt(global);
   $('adherencia').className = c;
-  $('adherenciaDetalle').textContent =
-    `${fallas} ${fallas === 1 ? 'falla' : 'fallas'} en ${ops.length} ${ops.length === 1 ? 'caso' : 'casos'}`;
+  // Extubación habla de fallas; los demás (DAUCI) usan su propia etiqueta.
+  const etNo = bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? bundle.etiqueta_no.toLowerCase() : null;
+  $('adherenciaDetalle').textContent = etNo
+    ? `${fallas} de ${ops.length} ${ops.length === 1 ? 'paciente' : 'pacientes'} ${etNo}`
+    : `${fallas} ${fallas === 1 ? 'falla' : 'fallas'} en ${ops.length} ${ops.length === 1 ? 'caso' : 'casos'}`;
   $('semaforo').className = 'semaforo ' + c;
   $('medidorRelleno').style.width = Math.min(100, global) + '%';
   $('medidorRelleno').className = c;
@@ -1429,14 +1438,21 @@ function pintarEvento(){
 
   const porMotivo = agruparMotivos(casos);
   const peor = porMotivo[0];
-  $('veredicto').textContent =
-    c === 'oro'  ? `La falla está por debajo del ${UMBRAL_ORO}%.`
+  $('veredicto').textContent = etNo
+    ? (c === 'oro' ? `Por debajo del ${UMBRAL_ORO}%: excelente.`
+       : c === 'bajo' ? `Supera el ${UMBRAL_MEDIO}%.`
+       : c === 'medio' ? `Por encima del máximo del ${META}%.`
+       : `Por debajo del máximo del ${META}%.`) +
+      (peor ? ` ${peor.n} de ${fallas}: ${peor.nombre}.` : '')
+    : c === 'oro'  ? `La falla está por debajo del ${UMBRAL_ORO}%.`
     : c === 'bajo' ? `La falla supera el ${UMBRAL_MEDIO}%.` + (peor ? ` El motivo más frecuente es ${peor.nombre.toLowerCase()}.` : '')
     : peor ? `El motivo más frecuente es ${peor.nombre.toLowerCase()}: ${peor.n} de ${fallas}.`
            : `${fallas} de ${ops.length} casos terminaron en falla.`;
   $('veredicto').className = 'veredicto ' + c;
 
-  $('subMotivos').textContent = fallas
+  $('subMotivos').textContent = etNo
+    ? `Detalle de ${fallas === 1 ? 'el único paciente' : 'los ' + fallas + ' pacientes'} ${etNo}`
+    : fallas
     ? `Motivo de las ${fallas === 1 ? 'única falla' : fallas + ' fallas'} del período`
     : 'Motivo registrado en cada caso fallido';
   $('porMotivo').innerHTML = porMotivo.length
@@ -1445,7 +1461,7 @@ function pintarEvento(){
         <div class="fila1"><span>${m.nombre} <i>n=${m.n}</i></span><b>${fmt(m.p)}</b></div>
         <div class="pista"><i class="medio" style="width:${m.p}%"></i></div>
       </div>`).join('')
-    : '<p class="sub">No hubo fallas en el período elegido.</p>';
+    : `<p class="sub">${etNo ? 'No hubo pacientes ' + etNo : 'No hubo fallas'} en el período elegido.</p>`;
 
   barras('porSector', agrupar(ops, 'servicio'));
   if(bundle.pide_cama) pintarCamas(ops);
