@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0B3A57">
+<meta name="theme-color" content="#0B3A57" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0A131B" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
 <title>Tablero de resultados de Bundles/Indicadores de Calidad · HBEE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,6 +18,23 @@
   --ambar:#C4881B; --ambar-050:#FBF0DC;
   --rojo:#BE4025;  --rojo-050:#FAE8E3;
   --oro:#C9A227; --oro-050:#FAF1D4; --plata:#9AA7B0; --bronce:#A9713F;
+  --superficie:#FFFFFF; --superficie-2:#F7FAFC; --cabecera:#0B3A57; --cabecera-texto:#A8CBE2;
+  color-scheme:light dark;
+}
+/* Tema oscuro: lo elige solo el teléfono o la compu de cada persona. */
+@media (prefers-color-scheme: dark){
+  :root{
+    --azul-900:#D6E7F3; --azul-700:#62AEE2; --azul-500:#4A9AD3; --azul-050:#172A3A;
+    --papel:#0D151C; --superficie:#151F29; --superficie-2:#1A2632;
+    --tinta:#E3EBF1; --tinta-suave:#8DA0AF; --linea:#25333F;
+    --verde:#3FBF87; --verde-050:#11301F;
+    --ambar:#E3A83D; --ambar-050:#3A2B10;
+    --rojo:#F06E50;  --rojo-050:#3A1C14;
+    --oro:#E6C452; --oro-050:#382E10;
+    --cabecera:#0A131B; --cabecera-texto:#7FA6C0;
+  }
+  svg.tendencia .punto{fill:var(--superficie)}
+  .semaforo{background:#06090C}
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -23,24 +42,24 @@ body{font-family:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   background:var(--papel);color:var(--tinta);font-size:16px;line-height:1.45}
 .oculto{display:none !important}
 
-header{background:var(--azul-900);color:#fff;padding:20px 20px 22px}
-header .interno{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:14px}
-header img{width:44px;height:44px;border-radius:10px}
-header h1{margin:0;font-size:1.1rem;font-weight:600;line-height:1.25}
-header h1 span{display:block;font-weight:400;font-size:.82rem;color:#A8CBE2;margin-top:2px}
+header{background:var(--cabecera);color:#fff;padding:14px 20px;border-bottom:1px solid var(--linea)}
+header .interno{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:14px}
+header img{width:36px;height:36px;border-radius:9px}
+header h1{margin:0;font-size:1rem;font-weight:600;line-height:1.25}
+header h1 span{display:block;font-weight:400;font-size:.78rem;color:var(--cabecera-texto);margin-top:1px}
 
-main{max-width:1000px;margin:0 auto;padding:20px}
+main{max-width:1180px;margin:0 auto;padding:20px}
 
 /* filtros */
 .filtros{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
 .filtros select{
-  padding:9px 12px;border:1px solid var(--linea);border-radius:9px;background:#fff;
+  padding:9px 12px;border:1px solid var(--linea);border-radius:9px;background:var(--superficie);
   font-family:inherit;font-size:.85rem;color:var(--tinta);flex:1 1 150px;min-width:0
 }
 .filtros select:focus{outline:3px solid rgba(27,127,184,.35);outline-offset:1px}
 
 /* ---------- hero con semáforo ---------- */
-.hero{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:22px;margin-bottom:18px}
+.hero{background:var(--superficie);border:1px solid var(--linea);border-radius:14px;padding:22px;margin-bottom:18px}
 .hero .arriba{display:flex;align-items:center;gap:20px}
 .semaforo{background:#152029;border-radius:16px;padding:9px;display:flex;flex-direction:column;gap:8px;flex:0 0 auto}
 .semaforo span{width:26px;height:26px;border-radius:50%;background:#2E3E49;transition:background .25s,box-shadow .25s}
@@ -74,7 +93,7 @@ main{max-width:1000px;margin:0 auto;padding:20px}
 /* ---------- paneles ---------- */
 .fila{display:grid;grid-template-columns:1fr;gap:18px;margin-bottom:18px}
 @media (min-width:760px){ .fila.dos{grid-template-columns:1fr 1fr} }
-.panel{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:20px;margin-bottom:18px}
+.panel{background:var(--superficie);border:1px solid var(--linea);border-radius:14px;padding:20px;margin-bottom:18px}
 .panel h2{margin:0 0 3px;font-size:.98rem;font-weight:600}
 .panel p.sub{margin:0 0 16px;font-size:.8rem;color:var(--tinta-suave)}
 .fila .panel{margin-bottom:0}
@@ -100,7 +119,7 @@ main{max-width:1000px;margin:0 auto;padding:20px}
 /* ---------- ranking ---------- */
 ol.ranking{list-style:none;margin:22px 0 0;padding:0;border-top:1px solid var(--linea)}
 ol.ranking li{display:flex;gap:12px;align-items:flex-start;padding:13px 0 13px 0;border-bottom:1px solid var(--linea)}
-ol.ranking li.zonaroja{background:var(--rojo-050);margin:0 -20px;padding-left:20px;padding-right:20px;border-bottom-color:#EFCFC5}
+ol.ranking li.zonaroja{background:var(--rojo-050);margin:0 -20px;padding-left:20px;padding-right:20px;border-bottom-color:var(--linea)}
 ol.ranking .pos{flex:0 0 30px;height:30px;border-radius:50%;background:var(--azul-050);color:var(--azul-700);
   display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:600}
 ol.ranking li.zonaroja .pos{background:var(--rojo);color:#fff}
@@ -155,7 +174,7 @@ td.pct.oro{color:var(--oro)}
 /* ---------- tasas ---------- */
 .tasas{display:grid;grid-template-columns:1fr;gap:12px}
 @media (min-width:640px){ .tasas{grid-template-columns:repeat(3,1fr)} }
-.tasa{background:#fff;border:1px solid var(--linea);border-top:5px solid var(--linea);border-radius:14px;padding:18px}
+.tasa{background:var(--superficie);border:1px solid var(--linea);border-top:5px solid var(--linea);border-radius:14px;padding:18px}
 .tasa.alto{border-top-color:var(--verde)} .tasa.bajo{border-top-color:var(--rojo)}
 .tasa h3{margin:0;font-size:.85rem;font-weight:600;color:var(--tinta-suave)}
 .tasa b{display:block;font-size:2.6rem;font-weight:700;line-height:1.05;margin-top:6px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
@@ -172,17 +191,78 @@ td.falta{color:var(--tinta-suave);font-style:italic;font-size:.78rem}
 .referencia i{width:11px;height:11px;border-radius:50%;display:block}
 .referencia i.d{background:linear-gradient(135deg,#F0DA8A,#C9A227 55%,#9A7A12);box-shadow:0 0 0 1px rgba(154,122,18,.35)} .referencia i.v{background:var(--verde)} .referencia i.a{background:var(--ambar)} .referencia i.r{background:var(--rojo)}
 
-footer{max-width:1000px;margin:0 auto;padding:6px 20px 40px;font-size:.78rem;color:var(--tinta-suave)}
+footer{max-width:1180px;margin:0 auto;padding:6px 20px 40px;font-size:.78rem;color:var(--tinta-suave)}
 footer p{margin:4px 0}
 footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--linea);color:var(--tinta)}
 .vacio{padding:40px 20px;text-align:center;color:var(--tinta-suave);font-size:.9rem}
 
-/* --- Selector de indicadores --- */
-.indicadores{max-width:1000px;margin:0 auto;padding:0 20px 14px;display:flex;gap:8px;
-  overflow-x:auto;-webkit-overflow-scrolling:touch}
-.indicadores button{flex:0 0 auto;padding:9px 16px;border-radius:999px;font-size:.88rem;
-  border:1px solid rgba(255,255,255,.35);background:transparent;color:#DCE9F2}
-.indicadores button.activo{background:#fff;border-color:#fff;color:var(--azul-900);font-weight:600}
+/* ---------- Portada: tarjetas de indicadores ---------- */
+.inicio{display:grid;grid-template-columns:1fr;gap:18px}
+@media (min-width:900px){ .inicio{grid-template-columns:230px 1fr;gap:28px} }
+.lateral h2{margin:0;font-size:1.35rem;font-weight:600;letter-spacing:-.01em}
+.lateral p{margin:3px 0 14px;font-size:.85rem;color:var(--tinta-suave)}
+.lateral .rotulo{font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta-suave);margin:4px 0 8px}
+.estados{display:flex;flex-wrap:wrap;gap:6px}
+@media (min-width:900px){ .estados{flex-direction:column;gap:2px} }
+.estados button{display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:9px;
+  border:1px solid var(--linea);background:var(--superficie);color:var(--tinta);font:inherit;font-size:.85rem;cursor:pointer}
+@media (min-width:900px){ .estados button{border-color:transparent;background:transparent;width:100%} }
+.estados button i{width:8px;height:8px;border-radius:50%;background:var(--tinta-suave);flex:0 0 auto}
+.estados button i.fuera{background:var(--rojo)} .estados button i.atencion{background:var(--ambar)}
+.estados button i.ok{background:var(--verde)} .estados button i.todos{background:var(--azul-500)}
+.estados button b{margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums;padding-left:8px}
+.estados button.activo{background:var(--azul-050);border-color:var(--azul-050);font-weight:600}
+.lateral .filtros{flex-direction:column;margin:0 0 18px}
+.lateral .filtros select{flex:0 0 auto;width:100%}
+
+.area{margin:0 0 26px}
+.area > h3{display:flex;align-items:baseline;gap:8px;margin:0 0 10px;font-size:.95rem;font-weight:600}
+.area > h3 span{font-size:.78rem;font-weight:400;color:var(--tinta-suave)}
+.grillaInd{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.tarjetaInd{background:var(--superficie);border:1px solid var(--linea);border-radius:12px;padding:14px 14px 11px;
+  display:flex;flex-direction:column;gap:6px;text-align:left;cursor:pointer;color:inherit;text-decoration:none;min-width:0;
+  transition:border-color .15s,transform .15s}
+.tarjetaInd:hover{border-color:var(--azul-500)}
+.tarjetaInd:active{transform:scale(.99)}
+.tarjetaInd:focus-visible{outline:3px solid rgba(27,127,184,.35);outline-offset:2px}
+.tarjetaInd.na{opacity:.55}
+.tiCabeza{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.tiCabeza b{font-size:.95rem;font-weight:600;line-height:1.25}
+.chipTipo{font-size:.66rem;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--azul-050);
+  color:var(--azul-700);white-space:nowrap;letter-spacing:.03em;text-transform:uppercase}
+.tiValor{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:4px}
+.tiValor strong{font-size:2rem;font-weight:700;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tiValor span{font-size:.75rem;color:var(--tinta-suave)}
+.tiValor strong.oro{color:var(--oro)} .tiValor strong.alto{color:var(--verde)}
+.tiValor strong.medio{color:var(--ambar)} .tiValor strong.bajo{color:var(--rojo)}
+.tiValor strong.sindatos,.tiValor strong.na{color:var(--tinta-suave)}
+.tiEstado{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;color:var(--tinta-suave)}
+.tiEstado i{width:8px;height:8px;border-radius:50%;background:var(--tinta-suave)}
+.tiEstado.oro{color:var(--oro)} .tiEstado.oro i{background:var(--oro)}
+.tiEstado.alto{color:var(--verde)} .tiEstado.alto i{background:var(--verde)}
+.tiEstado.medio{color:var(--ambar)} .tiEstado.medio i{background:var(--ambar)}
+.tiEstado.bajo{color:var(--rojo)} .tiEstado.bajo i{background:var(--rojo)}
+.tiEstado.info{color:var(--azul-700)} .tiEstado.info i{background:var(--azul-500)}
+.tiDetalle{font-size:.78rem;color:var(--tinta-suave)}
+.tiPie{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--linea);
+  padding-top:8px;margin-top:auto}
+.tiPie small{font-size:.75rem;color:var(--azul-700);font-weight:500;white-space:nowrap}
+svg.spark{width:120px;height:30px;display:block}
+svg.spark path{fill:none;stroke:var(--azul-500);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round;opacity:.8}
+svg.spark circle{fill:var(--azul-500)}
+svg.spark circle.oro{fill:var(--oro)} svg.spark circle.alto{fill:var(--verde)}
+svg.spark circle.medio{fill:var(--ambar)} svg.spark circle.bajo{fill:var(--rojo)}
+.sparkVacio{font-size:.72rem;color:var(--tinta-suave)}
+.esqueleto{display:block;height:2rem;width:60%;border-radius:6px;background:var(--azul-050);animation:latido 1.2s ease-in-out infinite}
+@keyframes latido{50%{opacity:.5}}
+@media (prefers-reduced-motion:reduce){ .esqueleto{animation:none} .tarjetaInd{transition:none} }
+
+/* ---------- Detalle ---------- */
+.volver{display:flex;align-items:center;gap:12px;margin:0 0 16px;flex-wrap:wrap}
+.volver button{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:9px;
+  border:1px solid var(--linea);background:var(--superficie);color:var(--azul-700);font:inherit;font-size:.85rem;font-weight:500;cursor:pointer}
+.volver h2{margin:0;font-size:1.25rem;font-weight:600;letter-spacing:-.01em;flex:1 1 220px}
+.volver h2 span{display:block;font-size:.75rem;font-weight:500;color:var(--tinta-suave);letter-spacing:.06em;text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -190,14 +270,32 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
 <header>
   <div class="interno">
     <img src="logo.png" alt="" onerror="this.style.display='none'">
-    <h1>Tablero de resultados de Bundles/Indicadores de Calidad
+    <h1>Tablero de Indicadores de Calidad
       <span>Hospital del Bicentenario Esteban Echeverría</span></h1>
   </div>
-  <div class="indicadores oculto" id="indicadores"></div>
 </header>
 
 <main>
-  <div class="filtros">
+  <!-- ============ Portada ============ -->
+  <div class="inicio" id="vistaInicio">
+    <aside class="lateral">
+      <h2>Indicadores</h2>
+      <p id="resumenInicio">Cargando…</p>
+      <div id="lugarFiltros"></div>
+      <div class="rotulo">Filtrar</div>
+      <div class="estados" id="estados"></div>
+    </aside>
+    <div id="gruposInicio"></div>
+  </div>
+
+  <!-- ============ Detalle de un indicador ============ -->
+  <div id="vistaDetalle" class="oculto">
+  <div class="volver">
+    <button id="btnVolver">← Indicadores</button>
+    <h2 id="tituloDetalle"><span id="areaDetalle"></span><b id="nombreDetalle"></b></h2>
+  </div>
+  <div id="lugarFiltrosDetalle">
+  <div class="filtros" id="filtros">
     <select id="fPeriodo">
       <option value="mes">Mes en curso</option>
       <option value="90" selected>Últimos 3 meses</option>
@@ -208,6 +306,7 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
     <select id="fServicio"><option value="">Todos los sectores</option></select>
     <select id="fTurno"><option value="">Todos los turnos</option></select>
     <select id="fCama"><option value="">Todas las camas</option></select>
+  </div>
   </div>
 
   <div id="cargando" class="vacio">Cargando datos…</div>
@@ -285,7 +384,7 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
 
     <!-- 2c. Motivos de falla -->
     <section class="panel oculto" id="panelMotivos" style="margin-bottom:18px">
-      <h2>Por qué falló</h2>
+      <h2 id="tituloMotivos">Por qué falló</h2>
       <p class="sub" id="subMotivos">Motivo registrado en cada caso fallido</p>
       <div id="porMotivo"></div>
     </section>
@@ -366,6 +465,7 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
       <p class="notaRanking" id="notaCruce"></p>
     </section>
   </div>
+  </div><!-- /vistaDetalle -->
 </main>
 
 <footer>
@@ -472,8 +572,8 @@ function estadoPunto(cargas){
   return validas.every(c => c.ok) ? 'si' : 'no';
 }
 
-function armarCompuesto(regs, obsHdm){
-  const puntos = bundle.puntos;   // [{clave, nombre}]
+function armarCompuesto(regs, obsHdm, b = bundle){
+  const puntos = b.puntos;   // [{clave, nombre}]
   const mapa = new Map();
   const llave = (cama, fecha) => cama + '|' + fecha;
 
@@ -487,7 +587,7 @@ function armarCompuesto(regs, obsHdm){
   }
 
   // Higiene de manos: solo se mira en las camas-día que ya son pacientes del bundle.
-  if(bundle.incluye_hdm){
+  if(b.incluye_hdm){
     for(const o of oportunidades(obsHdm)){
       if(!o.cama) continue;
       const g = mapa.get(llave(o.cama, o.fecha));
@@ -506,6 +606,8 @@ function armarCompuesto(regs, obsHdm){
   });
 }
 
+// Baja solo la primera letra: "Con DAUCI" -> "con DAUCI".
+const minus = t => t ? t.charAt(0).toLowerCase() + t.slice(1) : '';
 function pct(parte, total){ return total ? Math.round(parte / total * 1000) / 10 : null; }
 /* En la mayoría de los indicadores, más alto es mejor. En otros, como la falla
    de extubación, es al revés: ahí los mismos umbrales se leen de arriba abajo. */
@@ -685,12 +787,9 @@ function dibujarTendencia(ops){
 /* ---------- Indicadores ---------- */
 async function cargarCatalogo(){
   const [{ data }, { data: grupos }] = await Promise.all([
-    db.from('hdm_bundles')
-      .select('clave,nombre,descripcion,propio,pide_cama,sectores,umbral_medio,meta,umbral_oro,orden,tipo,sentido,unidad,grupo,denominador_bundle,denominador_items,por_cada,extra_corto,etiqueta_si,etiqueta_no')
-      .eq('activo', true).order('orden'),
-    db.from('hdm_grupos')
-      .select('clave,nombre,descripcion,incluye_hdm,umbral_medio,meta,umbral_oro,orden,tasa_resultado')
-      .eq('activo', true).order('orden')
+    // Con * cada columna nueva (el área, por ejemplo) llega sola, sin tocar esto.
+    db.from('hdm_bundles').select('*').eq('activo', true).order('orden'),
+    db.from('hdm_grupos').select('*').eq('activo', true).order('orden')
   ]);
   const sueltos = data || [];
 
@@ -702,34 +801,18 @@ async function cargarCatalogo(){
       const miembros = sueltos.filter(x => x.grupo === g.clave);
       const puntos = miembros.map(m => ({ clave:m.clave, nombre:m.nombre }));
       if(g.incluye_hdm) puntos.push({ clave:'hdm', nombre:'Higiene de manos' });
-      catalogo.push({ ...g, tipo:'compuesto', propio:false, pide_cama:true,
+      catalogo.push({ ...g, area: g.area || (miembros[0] || {}).area, tipo:'compuesto', propio:false, pide_cama:true,
                       sentido:'mayor_mejor', miembros: miembros.map(m => m.clave), puntos });
     }
     catalogo.push(b);
   }
-  if(!catalogo.length) return;
-
-  ver('indicadores', catalogo.length > 1);
-  $('indicadores').innerHTML = catalogo
-    .map(b => `<button data-clave="${b.clave}">${b.nombre}</button>`).join('');
-
-  // Se puede compartir el link de un indicador: tablero.html#navm
-  const pedido = location.hash.replace('#', '');
-  await elegirBundle(catalogo.find(b => b.clave === pedido) ? pedido : catalogo[0].clave);
 }
-
-$('indicadores').addEventListener('click', e => {
-  const b = e.target.closest('button'); if(!b) return;
-  elegirBundle(b.dataset.clave);
-});
 
 async function elegirBundle(clave){
   bundle = catalogo.find(b => b.clave === clave);
   if(!bundle) return;
-  history.replaceState(null, '', '#' + clave);
-
-  [...$('indicadores').children].forEach(b =>
-    b.classList.toggle('activo', b.dataset.clave === clave));
+  $('nombreDetalle').textContent = bundle.nombre;
+  $('areaDetalle').textContent = areaDe(bundle);
 
   UMBRAL_MEDIO = Number(bundle.umbral_medio);
   META         = Number(bundle.meta);
@@ -751,6 +834,10 @@ async function elegirBundle(clave){
       `<span><i class="r"></i> Rojo: bajo, menos de ${UMBRAL_MEDIO}%</span>`;
 
   document.title = bundle.nombre + ' · Tablero HBEE';
+
+  // El título de los motivos sale de la pregunta de cada indicador, sin los signos.
+  $('tituloMotivos').textContent = bundle.pregunta_motivo
+    ? bundle.pregunta_motivo.replace(/[¿?]/g, '') : 'Por qué falló';
 
   // Cada tipo enciende sus propias secciones.
   const compuesto = tipo === 'compuesto';
@@ -787,6 +874,8 @@ async function elegirBundle(clave){
   $('subTurno').textContent = bundle.propio
     ? 'Oportunidades observadas y adherencia'
     : cumpleEv ? 'Casos registrados y cumplimiento'
+    : tipo === 'evento' && bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida'
+      ? `Casos registrados y porcentaje ${minus(bundle.etiqueta_no)}`
     : tipo === 'evento' ? 'Casos registrados y porcentaje de falla'
     : deGrupo ? 'Controles cargados y cumplimiento'
     : 'Controles cargados y cumplimiento del bundle';
@@ -805,10 +894,10 @@ async function elegirBundle(clave){
     bundle.propio
       ? 'Porcentaje de oportunidades observadas en las que el profesional se higienizó las manos. Cada observación aporta hasta dos oportunidades: antes del contacto con el paciente y después del contacto con su entorno.'
       : cumpleEv
-        ? `Porcentaje de casos con criterio en los que se cumplió la conducta (${(bundle.etiqueta_si || 'cumple').toLowerCase()}), sobre el total registrado.` +
+        ? `Porcentaje de casos con criterio en los que se cumplió la conducta (${minus(bundle.etiqueta_si || 'cumple')}), sobre el total registrado.` +
           (bundle.descripcion ? ' ' + bundle.descripcion : '')
       : tipo === 'evento' && bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida'
-        ? `Porcentaje de pacientes registrados ${bundle.etiqueta_no.toLowerCase()}, sobre el total cargado. Acá el número bueno es el bajo, así que el semáforo se lee al revés.` +
+        ? `Porcentaje de pacientes registrados ${minus(bundle.etiqueta_no)}, sobre el total cargado. Acá el número bueno es el bajo, así que el semáforo se lee al revés.` +
           (bundle.descripcion ? ' ' + bundle.descripcion : '')
       : tipo === 'evento'
         ? 'Porcentaje de casos que terminaron en falla sobre el total registrado. Acá el número bueno es el bajo, así que el semáforo se lee al revés que en los demás indicadores.'
@@ -827,7 +916,7 @@ async function elegirBundle(clave){
     : 'No hay controles registrados con esos filtros.';
   $('subTendencia').textContent =
     (bundle.propio ? 'Adherencia' : cumpleEv ? 'Cumplimiento'
-      : tipo === 'evento' ? (bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? 'Porcentaje ' + bundle.etiqueta_no.toLowerCase() : 'Porcentaje de falla')
+      : tipo === 'evento' ? (bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? 'Porcentaje ' + minus(bundle.etiqueta_no) : 'Porcentaje de falla')
       : compuesto ? 'Cumplimiento del bundle entero' : deGrupo ? 'Cumplimiento' : 'Cumplimiento del bundle') +
     ' mes a mes, últimos 12 meses. La línea punteada es el objetivo.';
 
@@ -1424,7 +1513,7 @@ function pintarEvento(){
   $('adherencia').textContent = fmt(global);
   $('adherencia').className = c;
   // Extubación habla de fallas; los demás (DAUCI) usan su propia etiqueta.
-  const etNo = bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? bundle.etiqueta_no.toLowerCase() : null;
+  const etNo = bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? minus(bundle.etiqueta_no) : null;
   $('adherenciaDetalle').textContent = etNo
     ? `${fallas} de ${ops.length} ${ops.length === 1 ? 'paciente' : 'pacientes'} ${etNo}`
     : `${fallas} ${fallas === 1 ? 'falla' : 'fallas'} en ${ops.length} ${ops.length === 1 ? 'caso' : 'casos'}`;
@@ -1487,8 +1576,8 @@ function pintarEventoCumple(casos){
   const no = ops.length - si;
   const global = pct(si, ops.length);
   const c = clase(global);
-  const etSi = (bundle.etiqueta_si || 'Cumple').toLowerCase();
-  const etNo = (bundle.etiqueta_no || 'No cumple').toLowerCase();
+  const etSi = minus(bundle.etiqueta_si || 'Cumple');
+  const etNo = minus(bundle.etiqueta_no || 'No cumple');
 
   $('adherencia').textContent = fmt(global);
   $('adherencia').className = c;
@@ -1660,48 +1749,73 @@ async function llenarFiltros(){
     }).join('');
 }
 
-['fPeriodo','fTurno','fEstamento','fCama'].forEach(id => $(id).addEventListener('change', pintar));
+['fTurno','fEstamento','fCama'].forEach(id => $(id).addEventListener('change', pintar));
+$('fPeriodo').addEventListener('change', () => bundle ? pintar() : recalcularInicio());
 // El sector manda sobre la lista de camas, así que primero se rehace esa lista.
-$('fServicio').addEventListener('change', () => { llenarCamas(fuenteActual()); pintar(); });
+$('fServicio').addEventListener('change', () => {
+  if(!bundle) return recalcularInicio();
+  llenarCamas(fuenteActual()); pintar();
+});
 
 function fuenteActual(){
   if(bundle && bundle.tipo === 'compuesto') return compuestos;
   return bundle && !bundle.propio ? registros : filas;
 }
 
-async function actualizar(){
-  if(!bundle) return;
+/* ---------- Descarga de datos, con caché ----------
+   La portada necesita los datos de todos los indicadores y el detalle los de uno:
+   se bajan una vez y se reusan durante un minuto. */
+const cache = new Map();          // clave -> { t, d }
+let obsCache = null;              // higiene de manos, compartida por varios indicadores
+const VIGENCIA = 55000;
 
+async function obsHdm(forzar){
+  // Si ya hay una descarga en curso, todos esperan esa misma.
+  if(obsCache && obsCache.p) return obsCache.p;
+  if(!forzar && obsCache && obsCache.d && Date.now() - obsCache.t < VIGENCIA) return obsCache.d;
+  const p = descargar();
+  obsCache = { ...(obsCache || {}), p };
+  try {
+    const d = await p;
+    obsCache = { t: Date.now(), d };
+    return d;
+  } catch(e){ obsCache = null; throw e; }
+}
+
+async function datosDe(b, forzar){
+  const c = cache.get(b.clave);
+  if(!forzar && c && Date.now() - c.t < VIGENCIA) return c.d;
+  const d = {};
   // Higiene de manos se baja igual cuando un checklist o el bundle entero la cruza por cama.
-  const cruza = (bundle.tipo === 'checklist' && bundle.pide_cama && !bundle.grupo) ||
-                (bundle.tipo === 'compuesto' && bundle.incluye_hdm);
-  if(bundle.propio || cruza) filas = await descargar();
+  const cruza = (b.tipo === 'checklist' && b.pide_cama && !b.grupo) ||
+                (b.tipo === 'compuesto' && b.incluye_hdm);
+  if(b.propio || cruza) d.filas = await obsHdm(forzar);
 
-  if(bundle.tipo === 'tasa'){
+  if(b.tipo === 'tasa'){
     const [ev, den, tipos] = await Promise.all([
       bajarTodo('hdm_publico_tasas',
         'bundle,fecha,periodo,turno,servicio,cama,motivo,motivo_texto,reintubacion',
-        { columna:'bundle', valor:bundle.clave }),
+        { columna:'bundle', valor:b.clave }),
       db.from('hdm_publico_mensual')
         .select('periodo,servicio,item_clave,valor')
-        .eq('bundle', bundle.denominador_bundle)
-        .in('item_clave', bundle.denominador_items || [])
+        .eq('bundle', b.denominador_bundle)
+        .in('item_clave', b.denominador_items || [])
         .order('periodo'),
       db.from('hdm_bundle_items')
         .select('clave,texto,orden,meta')
-        .eq('bundle', bundle.clave).eq('tipo', 'motivo').eq('activo', true).order('orden')
+        .eq('bundle', b.clave).eq('tipo', 'motivo').eq('activo', true).order('orden')
     ]);
-    tasaEventos = ev;
-    tasaDenom = den.data || [];
-    tasaTipos = tipos.data || [];
-  } else if(bundle.tipo === 'compuesto'){
-    registros = await bajarTodo('hdm_publico_registros',
+    d.tasaEventos = ev;
+    d.tasaDenom = den.data || [];
+    d.tasaTipos = tipos.data || [];
+  } else if(b.tipo === 'compuesto'){
+    d.registros = await bajarTodo('hdm_publico_registros',
       'id,bundle,fecha,periodo,turno,servicio,cama,items_si,items_no,items_nc,cumple',
-      { columna:'bundle', valor:bundle.miembros });
-    compuestos = armarCompuesto(registros, filas);
+      { columna:'bundle', valor:b.miembros });
+    d.compuestos = armarCompuesto(d.registros, d.filas || [], b);
     // Si el bundle tiene una tasa de resultado (NAVM), se baja con su denominador.
-    resultado = null;
-    const def = bundle.tasa_resultado && catalogo.find(c => c.clave === bundle.tasa_resultado);
+    d.resultado = null;
+    const def = b.tasa_resultado && catalogo.find(x => x.clave === b.tasa_resultado);
     if(def){
       const [ev, den] = await Promise.all([
         bajarTodo('hdm_publico_tasas', 'bundle,fecha,periodo,turno,servicio,cama,motivo',
@@ -1712,35 +1826,285 @@ async function actualizar(){
           .in('item_clave', def.denominador_items || [])
           .order('periodo')
       ]);
-      resultado = { def, evs:ev, dens:den.data || [] };
+      d.resultado = { def, evs:ev, dens:den.data || [] };
     }
-  } else if(bundle.tipo === 'evento'){
-    eventos = await bajarTodo('hdm_publico_eventos',
+  } else if(b.tipo === 'evento'){
+    d.eventos = await bajarTodo('hdm_publico_eventos',
       'bundle,fecha,periodo,turno,servicio,cama,exito,motivo,motivo_texto',
-      { columna:'bundle', valor:bundle.clave });
-  } else if(bundle.tipo === 'mensual'){
+      { columna:'bundle', valor:b.clave });
+  } else if(b.tipo === 'mensual'){
     // Un conteo mensual no tiene fecha: se ordena por período.
     const { data } = await db.from('hdm_publico_mensual')
       .select('bundle,periodo,servicio,item_clave,item_texto,item_orden,valor')
-      .eq('bundle', bundle.clave).order('periodo');
-    mensuales = data || [];
-  } else if(!bundle.propio){
-    registros = await bajarTodo('hdm_publico_registros',
-      'id,bundle,fecha,periodo,turno,servicio,cama,items_si,items_no,items_nc,cumple',
-      { columna:'bundle', valor:bundle.clave });
-    itemsRegistro = await bajarTodo('hdm_publico_items',
-      'registro_id,bundle,fecha,periodo,turno,servicio,cama,item_clave,item_texto,item_orden,valor',
-      { columna:'bundle', valor:bundle.clave });
+      .eq('bundle', b.clave).order('periodo');
+    d.mensuales = data || [];
+  } else if(!b.propio){
+    const [regs, items] = await Promise.all([
+      bajarTodo('hdm_publico_registros',
+        'id,bundle,fecha,periodo,turno,servicio,cama,items_si,items_no,items_nc,cumple',
+        { columna:'bundle', valor:b.clave }),
+      bajarTodo('hdm_publico_items',
+        'registro_id,bundle,fecha,periodo,turno,servicio,cama,item_clave,item_texto,item_orden,valor',
+        { columna:'bundle', valor:b.clave })
+    ]);
+    d.registros = regs; d.itemsRegistro = items;
   }
+  cache.set(b.clave, { t: Date.now(), d });
+  return d;
+}
+
+async function actualizar(){
+  if(!bundle) return;
+  const b = bundle;
+  const d = await datosDe(b, true);
+  if(bundle !== b) return;   // se cambió de pantalla mientras bajaba
+
+  if(d.filas) filas = d.filas;
+  if(b.tipo === 'tasa'){ tasaEventos = d.tasaEventos; tasaDenom = d.tasaDenom; tasaTipos = d.tasaTipos; }
+  else if(b.tipo === 'compuesto'){ registros = d.registros; compuestos = d.compuestos; resultado = d.resultado; }
+  else if(b.tipo === 'evento') eventos = d.eventos;
+  else if(b.tipo === 'mensual') mensuales = d.mensuales;
+  else if(!b.propio){ registros = d.registros; itemsRegistro = d.itemsRegistro; }
 
   llenarCamas(fuenteActual());
   pintar();
 }
 
+/* ================= Portada ================= */
+const resumenes = new Map();   // clave -> lo que muestra su tarjeta
+let filtroEstado = '';
+
+function areaDe(b){ return b.area || (b.propio ? 'Higiene de manos' : 'Otros indicadores'); }
+
+const TIPO_CHIP = b => b.propio ? 'Observación' : ({ compuesto:'Bundle', checklist:'Control',
+  evento:'Por caso', tasa:'Tasa', mensual:'Conteo' })[b.tipo || 'checklist'] || '';
+
+const ESTADO_TXT = { oro:'Excelencia', alto:'En meta', medio:'Atención', bajo:'Fuera de meta',
+                     sindatos:'Sin datos en el período', na:'No se mide en este sector', info:'Conteo mensual' };
+const grupoEstado = e => e === 'oro' || e === 'alto' ? 'ok' : e === 'medio' ? 'atencion' : e === 'bajo' ? 'fuera' : 'otros';
+
+// Corre una cuenta con los umbrales y el sentido de otro indicador, sin tocar el que está abierto.
+function conIndicador(b, fn){
+  const antes = { bundle, UMBRAL_MEDIO, META, UMBRAL_ORO };
+  bundle = b;
+  UMBRAL_MEDIO = Number(b.umbral_medio); META = Number(b.meta); UMBRAL_ORO = Number(b.umbral_oro);
+  try { return fn(); }
+  finally { ({ bundle, UMBRAL_MEDIO, META, UMBRAL_ORO } = antes); }
+}
+
+const soloSector = rows => { const s = $('fServicio').value; return rows.filter(r => !s || r.servicio === s); };
+
+function opsDe(b, rows){
+  const t = b.tipo || 'checklist';
+  if(b.propio) return oportunidades(rows);
+  if(t === 'compuesto') return rows.filter(c => c.completo);
+  if(t === 'evento') return rows.map(e => ({ ...e, higienizo: b.sentido === 'menor_mejor' ? !e.exito : !!e.exito }));
+  return comoOportunidades(rows);
+}
+function filasDe(b, d){
+  const t = b.tipo || 'checklist';
+  return (b.propio ? d.filas : t === 'compuesto' ? d.compuestos : t === 'evento' ? d.eventos : d.registros) || [];
+}
+function seriePct(ops){
+  const m = new Map();
+  for(const o of ops){ const g = m.get(o.periodo) || { n:0, si:0 }; g.n++; if(o.higienizo) g.si++; m.set(o.periodo, g); }
+  return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-6).map(([mes, g]) => ({ mes, v:pct(g.si, g.n) }));
+}
+
+function resumen(b, d){
+  return conIndicador(b, () => {
+    const t = b.tipo || 'checklist';
+    const s = $('fServicio').value;
+    if(s && !b.propio && b.sectores && b.sectores.length && !b.sectores.includes(s))
+      return { estado:'na', valor:'—', detalle:`No se mide en ${s}`, serie:[] };
+
+    if(t === 'mensual'){
+      const desde = periodoDesde();
+      const sec = (d.mensuales || []).filter(m => !s || m.servicio === s);
+      const dentro = sec.filter(m => !desde || m.periodo >= desde);
+      const total = dentro.reduce((a, m) => a + Number(m.valor), 0);
+      const porMes = new Map();
+      sec.forEach(m => porMes.set(m.periodo, (porMes.get(m.periodo) || 0) + Number(m.valor)));
+      const serie = [...porMes.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-6).map(([mes, v]) => ({ mes, v }));
+      const meses = new Set(dentro.map(m => m.periodo)).size;
+      if(!dentro.length) return { estado:'sindatos', valor:'—', detalle:'Sin meses cargados en el período', serie };
+      return { estado:'info', valor:total.toLocaleString('es-AR'), unidad:b.unidad || '',
+               detalle:`${meses} ${meses === 1 ? 'mes cargado' : 'meses cargados'}`, serie };
+    }
+
+    if(t === 'tasa'){
+      const sectores = s ? [s] : (b.sectores && b.sectores.length ? b.sectores
+                       : [...new Set((d.tasaDenom || []).map(x => x.servicio))]);
+      const desde = periodoDesde();
+      const evS = (d.tasaEventos || []).filter(e => sectores.includes(e.servicio));
+      const denS = (d.tasaDenom || []).filter(x => sectores.includes(x.servicio));
+      const R = calcularTasa(evS.filter(e => !desde || e.periodo >= desde),
+                             denS.filter(x => !desde || x.periodo >= desde), sectores);
+      const porCada = Number(b.por_cada) || 1000;
+      const r = R.total.dias > 0 ? R.total.n / R.total.dias * porCada : null;
+      const serie = calcularTasa(evS, denS, sectores).meses
+        .filter(m => m.ok && m.dias > 0).slice(-6).map(m => ({ mes:m.periodo, v:m.n / m.dias * porCada }));
+      const unidad = b.unidad || 'días';
+      if(r === null) return { estado:'sindatos', valor:'—', detalle:`Faltan los ${unidad} del período`, serie,
+                              meta:`meta: menos de ${fmtMeta(b.meta)}` };
+      return { estado:claseTasa(r, Number(b.meta)), valor:fmtTasa(r), unidad:`por ${porCada.toLocaleString('es-AR')} ${unidad}`,
+               detalle:`${R.total.n} ${R.total.n === 1 ? 'evento' : 'eventos'} en ${R.total.dias.toLocaleString('es-AR')} ${unidad}`,
+               serie, meta:`meta: menos de ${fmtMeta(b.meta)}` };
+    }
+
+    const base = filasDe(b, d);
+    const ops = opsDe(b, filtrar(base));
+    const serie = seriePct(opsDe(b, soloSector(base)));
+    const menor = b.sentido === 'menor_mejor';
+    const meta = menor ? `máximo ${META}%` : `objetivo ${META}%`;
+    if(!ops.length){
+      const incompletas = t === 'compuesto' ? filtrar(base).length : 0;
+      return { estado:'sindatos', valor:'—', serie, meta, detalle: incompletas
+        ? `${incompletas} ${incompletas === 1 ? 'cama-día con cargas' : 'camas-día con cargas'}, ninguna con los ${b.puntos.length} puntos`
+        : 'Sin cargas en el período' };
+    }
+    const si = ops.filter(o => o.higienizo).length;
+    const p = pct(si, ops.length);
+    const n = ops.length;
+    const detalle = b.propio ? `${si} de ${n} oportunidades`
+      : t === 'compuesto' ? `${si} de ${n} ${n === 1 ? 'cama-día completa' : 'camas-día completas'}`
+      : t === 'evento' ? `${si} de ${n} ${n === 1 ? 'caso' : 'casos'} · ${minus(menor ? (b.etiqueta_no || 'fallida') : (b.etiqueta_si || 'cumple'))}`
+      : `${si} de ${n} controles cumplidos`;
+    return { estado:clase(p), valor:fmt(p), detalle, serie, meta };
+  });
+}
+
+function spark(serie, estado){
+  const v = (serie || []).filter(x => x.v !== null && isFinite(x.v));
+  if(v.length < 2) return '<span class="sparkVacio">Pocos meses para ver tendencia</span>';
+  const W = 120, H = 30, p = 4;
+  const max = Math.max(...v.map(x => x.v)), min = Math.min(0, ...v.map(x => x.v));
+  const rango = (max - min) || 1;
+  const x = i => p + i * (W - 2*p) / (v.length - 1);
+  const y = val => H - p - (val - min) / rango * (H - 2*p);
+  const d = v.map((s, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(s.v).toFixed(1)}`).join(' ');
+  const u = v[v.length - 1];
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tendencia de los últimos ${v.length} meses">` +
+    `<path d="${d}"></path><circle cx="${x(v.length - 1).toFixed(1)}" cy="${y(u.v).toFixed(1)}" r="3.2" class="${estado}"></circle></svg>`;
+}
+
+function tarjeta(b){
+  const r = resumenes.get(b.clave);
+  const cabeza = `<div class="tiCabeza"><b>${b.nombre}</b><span class="chipTipo">${TIPO_CHIP(b)}</span></div>`;
+  const href = '#' + encodeURIComponent(b.clave);
+  if(!r) return `<a class="tarjetaInd" href="${href}">${cabeza}
+      <span class="esqueleto"></span><span class="tiDetalle">Calculando…</span></a>`;
+  return `<a class="tarjetaInd ${r.estado === 'na' ? 'na' : ''}" href="${href}">
+      ${cabeza}
+      <div class="tiValor"><strong class="${r.estado}">${r.valor}</strong>${r.unidad ? `<span>${r.unidad}</span>` : ''}</div>
+      <div class="tiEstado ${r.estado}"><i></i>${ESTADO_TXT[r.estado] || ''}${r.meta && r.estado !== 'na' ? ` <span style="font-weight:400;color:var(--tinta-suave)">· ${r.meta}</span>` : ''}</div>
+      <div class="tiDetalle">${r.detalle || ''}</div>
+      <div class="tiPie">${spark(r.serie, r.estado)}<small>Ver detalle →</small></div>
+    </a>`;
+}
+
+function pintarInicio(){
+  const conteo = { todos:catalogo.length, fuera:0, atencion:0, ok:0, otros:0 };
+  catalogo.forEach(b => { const r = resumenes.get(b.clave); if(r) conteo[grupoEstado(r.estado)]++; });
+  const listos = resumenes.size >= catalogo.length;
+
+  $('resumenInicio').textContent = `${catalogo.length} indicadores` +
+    (listos ? (conteo.fuera ? ` · ${conteo.fuera} fuera de meta` : ' · ninguno fuera de meta') : ' · calculando…');
+
+  const opciones = [['', 'Todos', 'todos', conteo.todos], ['fuera', 'Fuera de meta', 'fuera', conteo.fuera],
+                    ['atencion', 'Atención', 'atencion', conteo.atencion], ['ok', 'En meta', 'ok', conteo.ok],
+                    ['otros', 'Sin semáforo', 'otros', conteo.otros]];
+  $('estados').innerHTML = opciones.map(([v, t, c, n]) =>
+    `<button data-estado="${v}" class="${filtroEstado === v ? 'activo' : ''}"><i class="${c}"></i>${t}<b>${n}</b></button>`).join('');
+
+  const areas = [];
+  for(const b of catalogo){
+    const nombre = areaDe(b);
+    let a = areas.find(x => x.nombre === nombre);
+    if(!a){ a = { nombre, items:[] }; areas.push(a); }
+    a.items.push(b);
+  }
+  const pasa = b => !filtroEstado || (resumenes.get(b.clave) && grupoEstado(resumenes.get(b.clave).estado) === filtroEstado);
+  $('gruposInicio').innerHTML = areas.map(a => {
+    const vis = a.items.filter(pasa);
+    if(!vis.length) return '';
+    const fuera = vis.filter(b => resumenes.get(b.clave) && resumenes.get(b.clave).estado === 'bajo').length;
+    return `<section class="area"><h3>${a.nombre}<span>${vis.length} ${vis.length === 1 ? 'indicador' : 'indicadores'}` +
+      `${fuera ? ` · ${fuera} fuera de meta` : ''}</span></h3><div class="grillaInd">${vis.map(tarjeta).join('')}</div></section>`;
+  }).join('') || '<p class="vacio">Ningún indicador en ese estado con estos filtros.</p>';
+
+  $('pieActualizado').textContent =
+    'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+// Recalcula las tarjetas con los datos ya bajados (al cambiar período o sector).
+function recalcularInicio(){
+  for(const b of catalogo){
+    const c = cache.get(b.clave);
+    if(c) resumenes.set(b.clave, resumen(b, c.d));
+  }
+  pintarInicio();
+}
+
+// Baja los datos de todos los indicadores; cada tarjeta se completa cuando llega lo suyo.
+async function cargarInicio(forzar){
+  pintarInicio();
+  await Promise.all(catalogo.map(async b => {
+    try {
+      const d = await datosDe(b, forzar);
+      resumenes.set(b.clave, resumen(b, d));
+    } catch(e){
+      console.error(b.clave, e);
+      resumenes.set(b.clave, { estado:'sindatos', valor:'—', detalle:'No se pudieron leer los datos', serie:[] });
+    }
+    if(!bundle) pintarInicio();
+  }));
+}
+
+$('estados').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  filtroEstado = b.dataset.estado;
+  pintarInicio();
+});
+$('btnVolver').addEventListener('click', () => {
+  // Si se llegó desde la portada, volver atrás; si vino de un link directo, ir a la portada.
+  if(history.state && history.state.desdeInicio) history.back();
+  else location.hash = '';
+});
+
+/* ---------- Navegación: sin # la portada, con #clave el detalle ---------- */
+async function rutear(){
+  const clave = decodeURIComponent(location.hash.replace('#', ''));
+  const b = catalogo.find(x => x.clave === clave);
+  if(b){
+    ver('vistaInicio', false); ver('vistaDetalle', true);
+    $('lugarFiltrosDetalle').appendChild($('filtros'));
+    window.scrollTo(0, 0);
+    await elegirBundle(clave);
+  } else {
+    bundle = null;
+    document.title = 'Tablero de Indicadores de Calidad · HBEE';
+    // En la portada solo filtran el período y el sector.
+    ['fEstamento', 'fTurno', 'fCama'].forEach(id => { $(id).value = ''; ver(id, false); });
+    ver('fPeriodo', true); ver('fServicio', true);
+    $('lugarFiltros').appendChild($('filtros'));
+    ver('vistaDetalle', false); ver('vistaInicio', true);
+    recalcularInicio();
+    cargarInicio(false);
+  }
+}
+window.addEventListener('hashchange', rutear);
+// Al tocar una tarjeta se marca que se vino desde la portada, para que "volver" use el botón atrás.
+window.addEventListener('hashchange', () => {
+  if(location.hash && !(history.state && history.state.desdeInicio))
+    history.replaceState({ desdeInicio: true }, '');
+});
+
 (async () => {
   await llenarFiltros();
-  await cargarCatalogo();   // adentro elige el indicador y llama a actualizar()
-  setInterval(actualizar, 60000);
+  await cargarCatalogo();
+  await rutear();
+  setInterval(() => bundle ? actualizar() : cargarInicio(true), 60000);
 })();
 </script>
 </body>

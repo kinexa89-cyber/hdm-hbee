@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0B3A57">
+<meta name="theme-color" content="#0B3A57" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0A131B" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
 <title>Monitoreo de Bundles/Indicadores de Calidad · HBEE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +15,25 @@
   --azul-900:#0B3A57; --azul-700:#12608F; --azul-500:#1B7FB8; --azul-050:#E8F1F7;
   --papel:#F4F7F9; --tinta:#16242E; --tinta-suave:#5C6F7C; --linea:#D3DEE6;
   --ok:#1E7A5A; --no:#B4472A; --radio:10px;
+
+  --superficie:#FFFFFF; --cabecera:#0B3A57; --cabecera-2:#12608F; --cabecera-texto:#A8CBE2;
+  --boton:#12608F; --borde-azul:#C3DAEA;
+  --peligro-050:#FBE9E3; --peligro-borde:#F0C7B8; --peligro-texto:#8C3419; --peligro-fondo:#FDF6F3;
+  color-scheme:light dark;
 }
+/* Tema oscuro: lo elige solo el teléfono de cada persona. */
+@media (prefers-color-scheme: dark){
+  :root{
+    --azul-900:#D6E7F3; --azul-700:#62AEE2; --azul-500:#4A9AD3; --azul-050:#172A3A;
+    --papel:#0D151C; --superficie:#151F29; --tinta:#E3EBF1; --tinta-suave:#8DA0AF; --linea:#25333F;
+    --ok:#258A63; --no:#C2502F;
+    --cabecera:#0A131B; --cabecera-2:#12293A; --cabecera-texto:#7FA6C0;
+    --boton:#2475AD; --borde-azul:#24415A;
+    --peligro-050:#3A1C14; --peligro-borde:#5A2A1E; --peligro-texto:#F3A58F; --peligro-fondo:#22140F;
+  }
+  .tarjeta{box-shadow:0 18px 40px rgba(0,0,0,.5)}
+}
+
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
 body{font-family:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
@@ -23,72 +43,101 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
 input,select{font-family:inherit;font-size:16px}
 .oculto{display:none !important}
 
-.portada{min-height:100dvh;background:linear-gradient(160deg,var(--azul-900),var(--azul-700));
+.portada{min-height:100dvh;background:linear-gradient(160deg,var(--cabecera),var(--cabecera-2));
   display:flex;flex-direction:column;justify-content:center;padding:32px 24px}
 .portada .marca{display:flex;align-items:center;gap:14px;margin-bottom:36px}
 .portada .marca img{width:56px;height:56px;border-radius:12px;display:block}
 .portada h1{color:#fff;font-size:1.35rem;font-weight:600;margin:0;line-height:1.25}
-.portada h1 span{display:block;font-weight:400;font-size:.9rem;color:#A8CBE2;margin-top:2px}
-.tarjeta{background:#fff;border-radius:14px;padding:24px 20px 20px;box-shadow:0 18px 40px rgba(6,32,50,.28)}
+.portada h1 span{display:block;font-weight:400;font-size:.9rem;color:var(--cabecera-texto);margin-top:2px}
+.tarjeta{background:var(--superficie);border-radius:14px;padding:24px 20px 20px;box-shadow:0 18px 40px rgba(6,32,50,.28)}
 .tarjeta h2{margin:0 0 4px;font-size:1.05rem;font-weight:600}
 .tarjeta p.ayuda{margin:0 0 20px;color:var(--tinta-suave);font-size:.875rem}
 label{display:block;font-size:.8rem;color:var(--tinta-suave);margin-bottom:6px}
 input[type=text],input[type=password],select{width:100%;padding:13px 14px;border:1px solid var(--linea);
-  border-radius:var(--radio);background:#fff;color:var(--tinta)}
+  border-radius:var(--radio);background:var(--superficie);color:var(--tinta)}
 input:focus,select:focus,button:focus-visible{outline:3px solid rgba(27,127,184,.35);outline-offset:1px;border-color:var(--azul-500)}
 .campo{margin-bottom:16px}
-.boton{width:100%;padding:15px;border:0;border-radius:var(--radio);background:var(--azul-700);color:#fff;font-weight:600}
-.boton:active{background:var(--azul-900)}
+.boton{width:100%;padding:15px;border:0;border-radius:var(--radio);background:var(--boton);color:#fff;font-weight:600}
+.boton:active{filter:brightness(.88)}
 .boton[disabled]{opacity:.55}
-.boton.secundario{background:#fff;color:var(--azul-700);border:1px solid var(--linea)}
+.boton.secundario{background:var(--superficie);color:var(--azul-700);border:1px solid var(--linea)}
 .aviso{margin-top:14px;padding:11px 13px;border-radius:var(--radio);font-size:.875rem;
-  background:#FBE9E3;color:#8C3419;border:1px solid #F0C7B8}
+  background:var(--peligro-050);color:var(--peligro-texto);border:1px solid var(--peligro-borde)}
 
-header.barra{background:var(--azul-900);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20}
+header.barra{background:var(--cabecera);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20}
 header.barra img{width:32px;height:32px;border-radius:7px}
 header.barra .quien{flex:1;min-width:0}
 header.barra .quien b{display:block;font-size:.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-header.barra .quien span{font-size:.75rem;color:#A8CBE2}
+header.barra .quien span{font-size:.75rem;color:var(--cabecera-texto)}
 header.barra button{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;padding:7px 11px;font-size:.8rem}
 main{padding:16px;max-width:640px;margin:0 auto}
 
-.contexto{background:var(--azul-050);border:1px solid #C3DAEA;border-radius:var(--radio);
+.contexto{background:var(--azul-050);border:1px solid var(--borde-azul);border-radius:var(--radio);
   padding:11px 14px;display:flex;align-items:center;gap:10px;margin-bottom:18px}
 .contexto .datos{flex:1;font-size:.875rem;line-height:1.3}
 .contexto .datos b{font-weight:600}
 .contexto .datos em{font-style:normal;color:var(--tinta-suave);display:block;font-size:.8rem}
-.contexto button{background:#fff;border:1px solid #B6D2E4;color:var(--azul-700);border-radius:8px;padding:7px 10px;font-size:.8rem}
+.contexto button{background:var(--superficie);border:1px solid var(--borde-azul);color:var(--azul-700);border-radius:8px;padding:7px 10px;font-size:.8rem}
 
 .bloque{margin-bottom:22px}
 .bloque > h3{margin:0 0 4px;font-size:.95rem;font-weight:600}
 .bloque > p{margin:0 0 10px;font-size:.82rem;color:var(--tinta-suave)}
 .grilla{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.opcion{padding:13px 10px;border:1px solid var(--linea);background:#fff;border-radius:var(--radio);
+.opcion{padding:13px 10px;border:1px solid var(--linea);background:var(--superficie);border-radius:var(--radio);
   text-align:center;font-size:.9rem;color:var(--tinta)}
-.opcion.elegida{background:var(--azul-700);border-color:var(--azul-700);color:#fff;font-weight:600}
+.opcion.elegida{background:var(--boton);border-color:var(--boton);color:#fff;font-weight:600}
 .opcion.si.elegida{background:var(--ok);border-color:var(--ok)}
 .opcion.no.elegida{background:var(--no);border-color:var(--no)}
-.momento{border:1px solid var(--linea);border-radius:12px;background:#fff;padding:14px;margin-bottom:12px}
+.momento{border:1px solid var(--linea);border-radius:12px;background:var(--superficie);padding:14px;margin-bottom:12px}
 .momento h4{margin:0 0 2px;font-size:.92rem;font-weight:600}
 .momento p{margin:0 0 10px;font-size:.8rem;color:var(--tinta-suave)}
 .tecnica{margin-top:12px;padding-top:12px;border-top:1px dashed var(--linea)}
-.subgrupo{margin-top:12px;padding:12px;border:1px dashed #B6D2E4;border-radius:var(--radio);background:var(--azul-050)}
+.subgrupo{margin-top:12px;padding:12px;border:1px dashed var(--borde-azul);border-radius:var(--radio);background:var(--azul-050)}
 .subgrupo p{margin:0 0 8px;font-size:.85rem;color:var(--tinta)}
 .grilla.camas{grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:6px}
 .grilla.camas .opcion{padding:12px 4px;font-size:.88rem}
 #camaResumen{display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding:12px 14px;border:1px solid var(--azul-500);background:var(--azul-050);border-radius:var(--radio)}
 #camaResumen b{font-size:1.05rem;color:var(--azul-900)}
-#btnCambiarCama{border:1px solid var(--azul-700);background:#fff;color:var(--azul-700);
+#btnCambiarCama{border:1px solid var(--azul-700);background:var(--superficie);color:var(--azul-700);
   padding:7px 12px;border-radius:8px;font-size:.82rem}
 
-/* --- Selector de indicadores --- */
+/* --- Mis indicadores: tarjetas --- */
+.saludo h2{margin:0;font-size:1.3rem;font-weight:600;letter-spacing:-.01em}
+.saludo p{margin:3px 0 18px;font-size:.88rem;color:var(--tinta-suave)}
+.area{margin:0 0 22px}
+.area > h3{display:flex;align-items:baseline;gap:8px;margin:0 0 9px;font-size:.92rem;font-weight:600}
+.area > h3 span{font-size:.78rem;font-weight:400;color:var(--tinta-suave)}
+.grillaInd{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:560px){ .grillaInd{grid-template-columns:1fr 1fr} }
+.tarjetaInd{background:var(--superficie);border:1px solid var(--linea);border-radius:12px;padding:14px;
+  display:flex;flex-direction:column;gap:5px;text-align:left;color:inherit;width:100%;font:inherit;cursor:pointer}
+.tarjetaInd:active{border-color:var(--azul-500);transform:scale(.99)}
+.tiCabeza{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.tiCabeza b{font-size:1rem;font-weight:600;line-height:1.25}
+.chipTipo{font-size:.66rem;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--azul-050);
+  color:var(--azul-700);white-space:nowrap;letter-spacing:.03em;text-transform:uppercase}
+.tiComo{font-size:.8rem;color:var(--tinta-suave)}
+.tiPie{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--linea);
+  padding-top:9px;margin-top:6px}
+.tiHoy{display:flex;align-items:center;gap:6px;font-size:.82rem;font-weight:600;color:var(--tinta-suave)}
+.tiHoy i{width:8px;height:8px;border-radius:50%;background:var(--linea)}
+.tiHoy.hecho{color:var(--ok)} .tiHoy.hecho i{background:var(--ok)}
+.tiHoy.falta{color:#C4881B} .tiHoy.falta i{background:#C4881B}
+.tiPie small{font-size:.85rem;font-weight:600;color:var(--azul-700);white-space:nowrap}
+/* migas: siempre a mano para volver */
+.migas{display:flex;align-items:center;gap:10px;margin:0 0 16px}
+.migas button{flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;padding:8px 12px;border-radius:9px;
+  border:1px solid var(--linea);background:var(--superficie);color:var(--azul-700);font-size:.85rem;font-weight:500}
+.migas b{font-size:.95rem;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* --- Selector de indicadores (viejo) --- */
 .bundle{width:100%;text-align:left;padding:16px;margin-bottom:10px;border:1px solid var(--linea);
-  background:#fff;border-radius:var(--radio)}
+  background:var(--superficie);border-radius:var(--radio)}
 .bundle b{display:block;font-size:1.05rem;color:var(--azul-900)}
 .bundle span{display:block;margin-top:3px;font-size:.85rem;color:var(--tinta-suave)}
 #cualBundle{font-weight:600;color:var(--azul-700)}
-#btnCambiarBundle{border:1px solid var(--linea);background:#fff;color:var(--azul-700);
+#btnCambiarBundle{border:1px solid var(--linea);background:var(--superficie);color:var(--azul-700);
   padding:7px 12px;border-radius:8px;font-size:.82rem}
 
 /* --- Ítems de un bundle --- */
@@ -102,9 +151,9 @@ main{padding:16px;max-width:640px;margin:0 auto}
 .acceso{padding:11px 0;border-bottom:1px solid var(--linea)}
 .acceso b{display:block;font-size:.95rem}
 .acceso .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
-.chip{border:1px solid var(--linea);background:#fff;color:var(--tinta-suave);
+.chip{border:1px solid var(--linea);background:var(--superficie);color:var(--tinta-suave);
   padding:6px 11px;border-radius:999px;font-size:.8rem}
-.chip.dado{background:var(--azul-700);border-color:var(--azul-700);color:#fff;font-weight:600}
+.chip.dado{background:var(--boton);border-color:var(--boton);color:#fff;font-weight:600}
 .inactivo b{color:var(--tinta-suave);font-weight:400;text-decoration:line-through}
 
 /* --- Carga mensual --- */
@@ -115,7 +164,7 @@ main{padding:16px;max-width:640px;margin:0 auto}
 .numero input{width:96px;text-align:right;padding:11px;border:1px solid var(--linea);
   border-radius:var(--radio);font-size:1rem}
 .totales{margin-top:12px;padding:12px 14px;border-radius:var(--radio);background:var(--azul-050);
-  border:1px solid #B6D2E4}
+  border:1px solid var(--borde-azul)}
 .totales div{display:flex;justify-content:space-between;font-size:.9rem;padding:3px 0}
 .totales div b{font-size:1.05rem;color:var(--azul-900)}
 .mes{display:flex;justify-content:space-between;gap:10px;padding:9px 0;
@@ -124,9 +173,9 @@ main{padding:16px;max-width:640px;margin:0 auto}
 .opcion.con-sub::after{content:' ▾';font-size:.75em;opacity:.7}
 .tecnica p{margin:0 0 8px;font-size:.85rem;color:var(--tinta)}
 textarea{width:100%;padding:12px;border:1px solid var(--linea);border-radius:var(--radio);
-  font-family:inherit;font-size:16px;resize:vertical;min-height:70px;background:#fff}
+  font-family:inherit;font-size:16px;resize:vertical;min-height:70px;background:var(--superficie)}
 .enviar{position:sticky;bottom:0;padding:14px 0 calc(14px + env(safe-area-inset-bottom));
-  background:linear-gradient(to top,var(--papel) 72%,rgba(244,247,249,0))}
+  background:linear-gradient(to top,var(--papel) 72%,transparent)}
 
 .resumen{display:flex;align-items:baseline;gap:8px;margin:26px 0 10px;padding-top:20px;border-top:1px solid var(--linea)}
 .resumen b{font-size:1.6rem;font-weight:600;color:var(--azul-700)}
@@ -138,20 +187,20 @@ ul.cargas li span{color:var(--tinta-suave);white-space:nowrap}
 
 /* pestañas */
 .pestanas{display:flex;gap:6px;margin-bottom:18px}
-.pestanas button{flex:1;padding:10px;border:1px solid var(--linea);background:#fff;border-radius:var(--radio);
+.pestanas button{flex:1;padding:10px;border:1px solid var(--linea);background:var(--superficie);border-radius:var(--radio);
   font-size:.875rem;color:var(--tinta-suave)}
-.pestanas button.activa{background:var(--azul-900);border-color:var(--azul-900);color:#fff;font-weight:600}
+.pestanas button.activa{background:var(--boton);border-color:var(--boton);color:#fff;font-weight:600}
 
 /* padrón */
-.persona{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:13px 14px;margin-bottom:10px}
+.persona{background:var(--superficie);border:1px solid var(--linea);border-radius:12px;padding:13px 14px;margin-bottom:10px}
 .persona .cabeza{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .persona b{font-size:.92rem;font-weight:600}
 .persona .meta{font-size:.78rem;color:var(--tinta-suave);margin-top:2px}
 .chip{font-size:.7rem;padding:3px 8px;border-radius:20px;white-space:nowrap}
-.chip.admin{background:var(--azul-050);color:var(--azul-700);border:1px solid #C3DAEA}
-.chip.baja{background:#F3E4E0;color:#8C3419;border:1px solid #E7C6BB}
+.chip.admin{background:var(--azul-050);color:var(--azul-700);border:1px solid var(--borde-azul)}
+.chip.baja{background:var(--peligro-050);color:var(--peligro-texto);border:1px solid var(--peligro-borde)}
 .acciones{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
-.acciones button{background:#fff;border:1px solid var(--linea);color:var(--azul-700);
+.acciones button{background:var(--superficie);border:1px solid var(--linea);color:var(--azul-700);
   border-radius:8px;padding:7px 11px;font-size:.78rem}
 .acciones button.riesgo{color:var(--no)}
 
@@ -171,11 +220,11 @@ ul.cargas li span{color:var(--tinta-suave);white-space:nowrap}
 .persona details li b{font-weight:600;font-variant-numeric:tabular-nums}
 
 /* zona sensible */
-.bloque.peligro{border:1px solid #E7C6BB;background:#FDF6F3;border-radius:12px;padding:15px}
-.bloque.peligro > h3{color:#8C3419}
+.bloque.peligro{border:1px solid var(--peligro-borde);background:var(--peligro-fondo);border-radius:12px;padding:15px}
+.bloque.peligro > h3{color:var(--peligro-texto)}
 .boton.peligro{background:var(--no)}
-.boton.peligro:active{background:#8C3419}
-#cajaReinicio{margin-top:16px;padding-top:16px;border-top:1px dashed #E7C6BB}
+.boton.peligro:active{background:var(--peligro-texto)}
+#cajaReinicio{margin-top:16px;padding-top:16px;border-top:1px dashed var(--peligro-borde)}
 ul.reinicios{list-style:none;margin:0;padding:0}
 ul.reinicios li{padding:9px 0;border-bottom:1px solid var(--linea);font-size:.82rem;
   display:flex;justify-content:space-between;gap:12px}
@@ -257,12 +306,17 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
 
     <!-- ---------- Observar ---------- -->
     <section id="seccionObservar">
+      <div class="migas oculto" id="migas">
+        <button id="btnMisIndicadores">← Mis indicadores</button>
+        <b id="migasNombre">—</b>
+      </div>
+
       <div id="pasoBundle" class="oculto">
-        <div class="bloque">
-          <h3>¿Qué querés observar?</h3>
-          <p>Elegí el indicador que vas a cargar ahora.</p>
-          <div id="listaBundles"></div>
+        <div class="saludo">
+          <h2>Mis indicadores</h2>
+          <p id="resumenHoy">Tocá el que vas a cargar.</p>
         </div>
+        <div id="listaBundles"></div>
       </div>
 
       <div id="pasoMensual" class="oculto">
@@ -294,7 +348,6 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
         <div class="bloque">
           <h3>Empezar una ronda</h3>
           <p>Estás por cargar <span id="cualBundle">—</span>. Turno y sector quedan fijos para toda la ronda; la fecha y la hora se registran solas.</p>
-          <p style="margin-bottom:12px"><button id="btnCambiarBundle" class="oculto">Cambiar de indicador</button></p>
           <div class="campo">
             <label for="inTurno">Turno</label>
             <select id="inTurno"></select>
@@ -673,7 +726,7 @@ $('btnSalir').addEventListener('click', async () => {
   ficha = null; ctx = { turno:null, servicio:null }; cama = null;
   bundle = null; misBundles = []; itemsBundle = []; selItems = {};
   selEvento = { exito:null, motivo:null }; camposMes = []; motivos = [];
-  ver('pasoMensual', false);
+  ver('pasoMensual', false); ver('migas', false);
   $('inClave').value = ''; $('inDni').value = '';
   ver('pasoCarga', false); ver('pasoContexto', true);
   irA('observar');
@@ -734,19 +787,108 @@ async function cargarBundles(){
     return;
   }
 
-  $('listaBundles').innerHTML = misBundles.map(b =>
-    `<button class="bundle" data-clave="${b.clave}"><b>${b.nombre}</b>` +
-    `<span>${b.descripcion || ''}</span></button>`).join('');
+  // El área y el orden vienen de la tabla de indicadores (con * llega cualquier columna nueva).
+  const { data: defs } = await db.from('hdm_bundles').select('*')
+    .in('clave', misBundles.map(b => b.clave));
+  misBundles.forEach(b => {
+    const d = (defs || []).find(x => x.clave === b.clave) || {};
+    b.area = d.area || (b.propio ? 'Higiene de manos' : 'Otros indicadores');
+    b.orden = d.orden ?? 999;
+  });
+  misBundles.sort((a, b) => a.orden - b.orden);
 
   // Con uno solo no tiene sentido hacer elegir: se entra derecho.
   if(misBundles.length === 1) return elegirBundle(misBundles[0].clave);
-  ver('pasoBundle', true); ver('pasoContexto', false); ver('pasoCarga', false);
+  await mostrarMisIndicadores();
+}
+
+/* ---- Mis indicadores: una tarjeta por indicador, con lo cargado hoy ---- */
+const TIPO_CHIP = b => b.propio ? 'Observación' : ({ checklist:'Control', evento:'Por caso',
+  tasa:'Por evento', mensual:'Mensual' })[b.tipo || 'checklist'] || '';
+const COMO = b => b.propio ? 'Una observación por persona, momentos 1 y 5'
+  : ({ checklist:'Un control por cama en cada ronda', evento:'Un registro por cada paciente',
+       tasa:'Solo cuando sucede', mensual:'Una vez por mes, un sector por vez' })[b.tipo || 'checklist'] || '';
+
+async function hoyPorIndicador(){
+  const hoy = hoyISO();
+  const [obs, evs, regs] = await Promise.all([
+    misBundles.some(b => b.propio)
+      ? db.from('hdm_observaciones').select('fecha').eq('fecha', hoy) : { data:[] },
+    db.from('hdm_eventos').select('bundle').eq('fecha', hoy),
+    db.from('hdm_registros').select('bundle').eq('fecha', hoy)
+  ]);
+  const n = {};
+  (evs.data || []).concat(regs.data || []).forEach(r => n[r.bundle] = (n[r.bundle] || 0) + 1);
+  misBundles.filter(b => b.propio).forEach(b => n[b.clave] = (obs.data || []).length);
+
+  // Mensuales: cuántos sectores del mes pasado faltan cargar.
+  const mesPasado = (() => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
+  const falta = {};
+  await Promise.all(misBundles.filter(b => b.tipo === 'mensual').map(async b => {
+    const { data } = await db.rpc('hdm_mensual_cargado', { p_bundle: b.clave });
+    const sect = b.sectores && b.sectores.length ? b.sectores : sectoresTodos;
+    const hechos = new Set((data || []).filter(m => m.periodo === mesPasado).map(m => m.servicio));
+    falta[b.clave] = { faltan: sect.filter(x => !hechos.has(x)).length, total: sect.length,
+                       mes: nombreMes(mesPasado).split(' ')[0] };
+  }));
+  return { n, falta };
+}
+
+async function mostrarMisIndicadores(){
+  bundle = null;
+  $('subtituloApp').textContent = TITULO_APP;
+  ver('migas', false);
+  ver('pasoContexto', false); ver('pasoCarga', false); ver('pasoMensual', false);
+  ver('pasoBundle', true);
+  window.scrollTo({ top:0 });
+
+  const pintar = (hoy) => {
+    const areas = [];
+    misBundles.forEach(b => {
+      let a = areas.find(x => x.nombre === b.area);
+      if(!a){ a = { nombre:b.area, items:[] }; areas.push(a); }
+      a.items.push(b);
+    });
+    $('listaBundles').innerHTML = areas.map(a => `
+      <section class="area"><h3>${a.nombre}<span>${a.items.length}</span></h3>
+      <div class="grillaInd">${a.items.map(b => {
+        let estado = '<div class="tiHoy"><i></i>…</div>';
+        if(hoy){
+          if(b.tipo === 'mensual'){
+            const f = hoy.falta[b.clave];
+            estado = !f ? '' : f.faltan
+              ? `<div class="tiHoy falta"><i></i>Falta ${f.mes} en ${f.faltan} de ${f.total} ${f.total === 1 ? 'sector' : 'sectores'}</div>`
+              : `<div class="tiHoy hecho"><i></i>${f.mes.charAt(0).toUpperCase() + f.mes.slice(1)} completo</div>`;
+          } else {
+            const c = hoy.n[b.clave] || 0;
+            estado = c ? `<div class="tiHoy hecho"><i></i>${c} ${c === 1 ? 'carga' : 'cargas'} hoy</div>`
+                       : '<div class="tiHoy"><i></i>Sin cargas hoy</div>';
+          }
+        }
+        return `<button class="tarjetaInd" data-clave="${b.clave}">
+          <div class="tiCabeza"><b>${b.nombre}</b><span class="chipTipo">${TIPO_CHIP(b)}</span></div>
+          <div class="tiComo">${COMO(b)}</div>
+          <div class="tiPie">${estado}<small>Cargar →</small></div>
+        </button>`;
+      }).join('')}</div></section>`).join('');
+
+    if(hoy){
+      const total = Object.values(hoy.n).reduce((a, x) => a + x, 0);
+      $('resumenHoy').textContent = total
+        ? `Hoy llevás ${total} ${total === 1 ? 'carga' : 'cargas'}. Tocá el indicador que vas a cargar.`
+        : 'Tocá el indicador que vas a cargar.';
+    }
+  };
+  pintar(null);
+  try { pintar(await hoyPorIndicador()); } catch(e){ console.error(e); }
 }
 
 $('listaBundles').addEventListener('click', e => {
-  const b = e.target.closest('.bundle'); if(!b) return;
+  const b = e.target.closest('.tarjetaInd'); if(!b) return;
   elegirBundle(b.dataset.clave);
 });
+$('btnMisIndicadores').addEventListener('click', () => { limpiarFormulario(); mostrarMisIndicadores(); });
 
 async function elegirBundle(clave){
   bundle = misBundles.find(b => b.clave === clave);
@@ -754,7 +896,8 @@ async function elegirBundle(clave){
 
   $('subtituloApp').textContent = bundle.nombre;
   $('cualBundle').textContent = bundle.nombre;
-  ver('btnCambiarBundle', misBundles.length > 1);
+  $('migasNombre').textContent = bundle.nombre;
+  ver('migas', misBundles.length > 1);
 
   // Los sectores del desplegable se recortan a los del indicador.
   const permitidos = bundle.sectores && bundle.sectores.length
@@ -781,15 +924,16 @@ async function elegirBundle(clave){
   ver('pasoBundle', false); ver('pasoCarga', false);
   ver('pasoMensual', tipo === 'mensual');
   ver('pasoContexto', tipo !== 'mensual');
+  window.scrollTo({ top:0 });
   if(tipo === 'mensual') await prepararMensual();
+
+  // Si ya venía de una ronda (mismo turno y un sector que este indicador usa), se sigue de largo.
+  if(tipo !== 'mensual' && ctx.turno && ctx.servicio && permitidos.includes(ctx.servicio)){
+    $('inTurno').value = ctx.turno; $('inServicio').value = ctx.servicio;
+    comenzarRonda();
+  }
   refrescarCargas();
 }
-
-$('btnCambiarBundle').addEventListener('click', () => {
-  $('subtituloApp').textContent = TITULO_APP;
-  ver('pasoContexto', false); ver('pasoCarga', false); ver('pasoMensual', false);
-  ver('pasoBundle', true);
-});
 
 async function cargarItems(){
   const { data, error } = await db.from('hdm_bundle_items')
@@ -1087,7 +1231,8 @@ async function guardarTasa(forzar){
 }
 
 /* ---- Contexto ---- */
-$('btnComenzar').addEventListener('click', () => {
+$('btnComenzar').addEventListener('click', comenzarRonda);
+function comenzarRonda(){
   const turno = $('inTurno').value, servicio = $('inServicio').value;
   if(!turno || !servicio) return toast('Elegí turno y sector', true);
   ctx = { turno, servicio };
@@ -1096,7 +1241,7 @@ $('btnComenzar').addEventListener('click', () => {
   $('ctxFechaTurno').textContent = `${fechaLegible(hoyISO())} · turno ${turno.toLowerCase()}`;
   ver('pasoContexto', false); ver('pasoCarga', true);
   refrescarCargas();
-});
+}
 $('btnCambiarContexto').addEventListener('click', () => {
   ver('pasoCarga', false); ver('pasoContexto', true);
 });
