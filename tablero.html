@@ -686,7 +686,7 @@ function dibujarTendencia(ops){
 async function cargarCatalogo(){
   const [{ data }, { data: grupos }] = await Promise.all([
     db.from('hdm_bundles')
-      .select('clave,nombre,descripcion,propio,pide_cama,sectores,umbral_medio,meta,umbral_oro,orden,tipo,sentido,unidad,grupo,denominador_bundle,denominador_items,por_cada,extra_corto')
+      .select('clave,nombre,descripcion,propio,pide_cama,sectores,umbral_medio,meta,umbral_oro,orden,tipo,sentido,unidad,grupo,denominador_bundle,denominador_items,por_cada,extra_corto,etiqueta_si,etiqueta_no')
       .eq('activo', true).order('orden'),
     db.from('hdm_grupos')
       .select('clave,nombre,descripcion,incluye_hdm,umbral_medio,meta,umbral_oro,orden,tasa_resultado')
@@ -781,8 +781,12 @@ async function elegirBundle(clave){
   if(compuesto || conteo || tasa) $('fTurno').value = '';
   if(conteo || tasa) $('fCama').value = '';
   if(!bundle.propio) $('fEstamento').value = '';
+  // Un indicador por evento cuenta la falla (extubación) o el cumplimiento (prono),
+  // según su sentido.
+  const cumpleEv = tipo === 'evento' && bundle.sentido !== 'menor_mejor';
   $('subTurno').textContent = bundle.propio
     ? 'Oportunidades observadas y adherencia'
+    : cumpleEv ? 'Casos registrados y cumplimiento'
     : tipo === 'evento' ? 'Casos registrados y porcentaje de falla'
     : deGrupo ? 'Controles cargados y cumplimiento'
     : 'Controles cargados y cumplimiento del bundle';
@@ -791,11 +795,16 @@ async function elegirBundle(clave){
     : compuesto ? 'Camas-día con el bundle completo, por sector'
     : 'En qué sector del hospital se observó';
   $('thTotal').textContent = bundle.propio ? 'Oportunidades' : tipo === 'evento' ? 'Casos' : 'Controles';
-  $('thBien').textContent  = bundle.propio ? 'Se higienizó'  : tipo === 'evento' ? 'Fallas'  : 'Cumplen';
-  $('thPct').textContent   = bundle.propio ? 'Adherencia'    : tipo === 'evento' ? 'Falla'   : 'Cumplimiento';
+  $('thBien').textContent  = bundle.propio ? 'Se higienizó'
+    : cumpleEv ? (bundle.etiqueta_si || 'Cumplen') : tipo === 'evento' ? 'Fallas' : 'Cumplen';
+  $('thPct').textContent   = bundle.propio ? 'Adherencia'
+    : cumpleEv ? 'Cumplimiento' : tipo === 'evento' ? 'Falla' : 'Cumplimiento';
   $('glosaHero').textContent =
     bundle.propio
       ? 'Porcentaje de oportunidades observadas en las que el profesional se higienizó las manos. Cada observación aporta hasta dos oportunidades: antes del contacto con el paciente y después del contacto con su entorno.'
+      : cumpleEv
+        ? `Porcentaje de casos con criterio en los que se cumplió la conducta (${(bundle.etiqueta_si || 'cumple').toLowerCase()}), sobre el total registrado.` +
+          (bundle.descripcion ? ' ' + bundle.descripcion : '')
       : tipo === 'evento'
         ? 'Porcentaje de casos que terminaron en falla sobre el total registrado. Acá el número bueno es el bajo, así que el semáforo se lee al revés que en los demás indicadores.'
         : conteo
@@ -812,7 +821,7 @@ async function elegirBundle(clave){
     : compuesto ? 'No hay controles de ninguno de los puntos del bundle con esos filtros.'
     : 'No hay controles registrados con esos filtros.';
   $('subTendencia').textContent =
-    (bundle.propio ? 'Adherencia' : tipo === 'evento' ? 'Porcentaje de falla'
+    (bundle.propio ? 'Adherencia' : cumpleEv ? 'Cumplimiento' : tipo === 'evento' ? 'Porcentaje de falla'
       : compuesto ? 'Cumplimiento del bundle entero' : deGrupo ? 'Cumplimiento' : 'Cumplimiento del bundle') +
     ' mes a mes, últimos 12 meses. La línea punteada es el objetivo.';
 
@@ -1399,7 +1408,8 @@ function pintarEvento(){
   ver('contenido', casos.length > 0);
   if(!casos.length) return;
 
-  // Acá lo que se cuenta es la falla, no el acierto.
+  // Según el sentido del indicador se cuenta la falla (extubación) o el cumplimiento (prono).
+  if(bundle.sentido !== 'menor_mejor') return pintarEventoCumple(casos);
   const ops = casos.map(e => ({ ...e, higienizo: !e.exito }));
   const fallas = ops.filter(o => o.higienizo).length;
   const global = pct(fallas, ops.length);
@@ -1436,6 +1446,65 @@ function pintarEvento(){
         <div class="pista"><i class="medio" style="width:${m.p}%"></i></div>
       </div>`).join('')
     : '<p class="sub">No hubo fallas en el período elegido.</p>';
+
+  barras('porSector', agrupar(ops, 'servicio'));
+  if(bundle.pide_cama) pintarCamas(ops);
+
+  $('tablaTurno').innerHTML = agrupar(ops, 'turno').map(g => `
+    <tr>
+      <td>${g.nombre}</td>
+      <td class="num">${g.n}</td>
+      <td class="num">${g.si}</td>
+      <td class="num pct ${clase(g.p)}">${fmt(g.p)}</td>
+    </tr>`).join('');
+
+  dibujarTendencia(ops);
+  $('pieActualizado').textContent =
+    'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+/* Indicador por evento donde lo bueno es que se cumpla (prono en SDRA):
+   cada caso con criterio cuenta, y se mide en cuántos se hizo la conducta. */
+function pintarEventoCumple(casos){
+  const ops = casos.map(e => ({ ...e, higienizo: !!e.exito }));
+  const si = ops.filter(o => o.higienizo).length;
+  const no = ops.length - si;
+  const global = pct(si, ops.length);
+  const c = clase(global);
+  const etSi = (bundle.etiqueta_si || 'Cumple').toLowerCase();
+  const etNo = (bundle.etiqueta_no || 'No cumple').toLowerCase();
+
+  $('adherencia').textContent = fmt(global);
+  $('adherencia').className = c;
+  $('adherenciaDetalle').textContent =
+    `${si} de ${ops.length} ${ops.length === 1 ? 'caso' : 'casos'} con criterio · ${etSi}`;
+  $('semaforo').className = 'semaforo ' + c;
+  $('medidorRelleno').style.width = (global || 0) + '%';
+  $('medidorRelleno').className = c;
+  $('marcaMeta').style.left = META + '%';
+  $('textoMeta').style.left = META + '%';
+  $('textoMeta').textContent = 'objetivo ' + META + '%';
+  $('textoMeta').classList.remove('derecha');
+
+  const porMotivo = agruparMotivos(casos);
+  const peor = porMotivo[0];
+  $('veredicto').textContent =
+    c === 'oro' ? `¡Excelencia! Se cumplió en el ${fmt(global)} de los casos con criterio.`
+    : c === 'alto' ? `Cumplimiento alto, por encima del objetivo del ${META}%.`
+    : peor ? `${no} ${no === 1 ? 'caso' : 'casos'} sin cumplir. El motivo más frecuente es ${peor.nombre.toLowerCase()}: ${peor.n} de ${no}.`
+           : `Faltan ${Math.max(0, Math.ceil((META/100) * ops.length - si))} casos cumplidos para llegar al ${META}%.`;
+  $('veredicto').className = 'veredicto ' + c;
+
+  $('subMotivos').textContent = no
+    ? `Motivo de ${no === 1 ? 'el único caso' : 'los ' + no + ' casos'} en que no se cumplió (${etNo})`
+    : 'Motivo registrado en cada caso sin cumplir';
+  $('porMotivo').innerHTML = porMotivo.length
+    ? porMotivo.map(m => `
+      <div class="barra">
+        <div class="fila1"><span>${m.nombre} <i>n=${m.n}</i></span><b>${fmt(m.p)}</b></div>
+        <div class="pista"><i class="medio" style="width:${m.p}%"></i></div>
+      </div>`).join('')
+    : '<p class="sub">Se cumplió en todos los casos del período.</p>';
 
   barras('porSector', agrupar(ops, 'servicio'));
   if(bundle.pide_cama) pintarCamas(ops);

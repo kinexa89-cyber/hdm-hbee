@@ -338,11 +338,11 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
             <input id="inFechaEvento" type="date">
           </div>
           <div class="grilla" id="grillaResultado">
-            <button class="opcion si" data-valor="si">Exitosa</button>
-            <button class="opcion no" data-valor="no">Fallida</button>
+            <button class="opcion si" data-valor="si" id="botonSi">Exitosa</button>
+            <button class="opcion no" data-valor="no" id="botonNo">Fallida</button>
           </div>
           <div class="subgrupo oculto" id="cajaMotivo">
-            <p>¿Por qué falló?</p>
+            <p id="preguntaMotivo">¿Por qué falló?</p>
             <div class="grilla" id="grillaMotivo"></div>
           </div>
         </div>
@@ -936,14 +936,26 @@ async function guardarMes(pisar){
 /* ================= Indicadores por evento ================= */
 async function prepararEvento(){
   $('tituloEvento').textContent = bundle.nombre;
-  $('pistaEvento').textContent = bundle.descripcion || 'Marcá cómo salió.';
   $('inFechaEvento').value = hoyISO();
   $('inFechaEvento').max = hoyISO();
 
-  const { data } = await db.from('hdm_bundle_items')
-    .select('clave,texto,orden')
-    .eq('bundle', bundle.clave).eq('tipo', 'motivo').eq('activo', true).order('orden');
+  // Los textos de los botones y de la pregunta son de cada indicador
+  // (Exitosa/Fallida en extubación, Se pronó/No se pronó en prono).
+  const [{ data }, { data: def }] = await Promise.all([
+    db.from('hdm_bundle_items')
+      .select('clave,texto,orden')
+      .eq('bundle', bundle.clave).eq('tipo', 'motivo').eq('activo', true).order('orden'),
+    db.from('hdm_bundles')
+      .select('descripcion,etiqueta_si,etiqueta_no,pregunta_motivo').eq('clave', bundle.clave).maybeSingle()
+  ]);
   motivos = data || [];
+  bundle.etiqueta_si = (def && def.etiqueta_si) || 'Exitosa';
+  bundle.etiqueta_no = (def && def.etiqueta_no) || 'Fallida';
+  bundle.pregunta_motivo = (def && def.pregunta_motivo) || '¿Por qué falló?';
+  $('pistaEvento').textContent = (def && def.descripcion) || bundle.descripcion || 'Marcá cómo salió.';
+  $('botonSi').textContent = bundle.etiqueta_si;
+  $('botonNo').textContent = bundle.etiqueta_no;
+  $('preguntaMotivo').textContent = bundle.pregunta_motivo;
   $('grillaMotivo').innerHTML = motivos
     .map(m => `<button class="opcion" data-valor="${m.clave}">${m.texto}</button>`).join('');
   selEvento = { exito:null, motivo:null };
@@ -970,7 +982,7 @@ $('grillaMotivo').addEventListener('click', e => {
 async function guardarEvento(){
   if(selEvento.exito === null) return mostrarAviso('avisoCarga','Falta marcar cómo salió.');
   if(!selEvento.exito && motivos.length && !selEvento.motivo)
-    return mostrarAviso('avisoCarga','Falta marcar por qué falló.');
+    return mostrarAviso('avisoCarga', `Falta responder: ${bundle.pregunta_motivo}`);
 
   $('btnGuardar').disabled = true; $('btnGuardar').textContent = 'Guardando…';
   const { error } = await db.rpc('hdm_guardar_evento', {
@@ -1345,7 +1357,8 @@ async function refrescarCargas(){
     const h = new Date(o.created_at || o.creado)
       .toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
     const texto = bundle.propio ? `${o.estamento} · ${o.servicio}`
-      : bundle.tipo === 'evento' ? `${o.cama || o.servicio} · ${o.exito ? 'exitosa' : 'fallida'}`
+      : bundle.tipo === 'evento'
+        ? `${o.cama || o.servicio} · ${(o.exito ? bundle.etiqueta_si : bundle.etiqueta_no || '').toLowerCase()}`
       : bundle.tipo === 'tasa'
         ? `${o.cama || o.servicio} · ${(motivos.find(m => m.clave === o.motivo) || {}).texto || ''}`
       : (o.cama || o.servicio);
