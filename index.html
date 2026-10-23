@@ -794,6 +794,7 @@ async function cargarBundles(){
     const d = (defs || []).find(x => x.clave === b.clave) || {};
     b.area = d.area || (b.propio ? 'Higiene de manos' : 'Otros indicadores');
     b.orden = d.orden ?? 999;
+    b.calculo = d.calculo || null;   // 'porcentaje' en los mensuales de dos números
   });
   misBundles.sort((a, b) => a.orden - b.orden);
 
@@ -806,6 +807,7 @@ async function cargarBundles(){
 const TIPO_CHIP = b => b.propio ? 'Observación' : ({ checklist:'Control', evento:'Por caso',
   tasa:'Por evento', mensual:'Mensual' })[b.tipo || 'checklist'] || '';
 const COMO = b => b.propio ? 'Una observación por persona, momentos 1 y 5'
+  : b.calculo === 'porcentaje' ? 'Una vez por mes: cuántos cumplen sobre cuántos'
   : ({ checklist:'Un control por cama en cada ronda', evento:'Un registro por cada paciente',
        tasa:'Solo cuando sucede', mensual:'Una vez por mes, un sector por vez' })[b.tipo || 'checklist'] || '';
 
@@ -972,7 +974,7 @@ $('listaItems').addEventListener('click', e => {
 async function prepararMensual(){
   ocultarAviso('avisoMensual');
   $('tituloMensual').textContent = bundle.nombre;
-  $('pistaMensual').textContent =
+  $('pistaMensual').textContent = (bundle.descripcion ? bundle.descripcion + ' ' : '') +
     'Se carga a mes vencido, un sector por vez. El mes en curso todavía no se puede cargar.';
 
   // Últimos 12 meses cerrados, del más reciente al más viejo.
@@ -1014,6 +1016,15 @@ function pintarTotales(){
   const total = arm + v('tqt_esp');
   const suma = camposMes.reduce((a,c) => a + v(c.clave), 0);
 
+  // Mensual de dos números: se muestra el porcentaje en vivo y se avisa si no cierra.
+  if(bundle && bundle.calculo === 'porcentaje'){
+    const num = v('num'), den = v('den');
+    $('totalesMes').innerHTML = den
+      ? `<div><span>Porcentaje</span><b>${(num / den * 100).toFixed(1).replace('.', ',')}%</b></div>` +
+        (num > den ? '<div><span style="color:var(--no)">El primer número no puede ser mayor que el segundo</span></div>' : '')
+      : '<div><span>Porcentaje</span><b>—</b></div>';
+    return;
+  }
   $('totalesMes').innerHTML = camposMes.some(c => c.clave === 'tet')
     ? `<div><span>Días de ARM (TET + TQT)</span><b>${arm}</b></div>
        <div><span>Días de VAA en total</span><b>${total}</b></div>`
@@ -1049,9 +1060,11 @@ async function guardarMes(pisar){
     if(campo.value === '') return mostrarAviso('avisoMensual', `Falta completar: ${c.texto}.`);
     const n = Number(campo.value);
     if(!Number.isFinite(n) || n < 0 || !Number.isInteger(n))
-      return mostrarAviso('avisoMensual', `${c.texto}: tiene que ser un número entero de días.`);
+      return mostrarAviso('avisoMensual', `${c.texto}: tiene que ser un número entero, sin decimales.`);
     valores[c.clave] = n;
   }
+  if(bundle.calculo === 'porcentaje' && valores.num > valores.den)
+    return mostrarAviso('avisoMensual', `${camposMes[0].texto} no puede ser mayor que ${camposMes[1].texto.toLowerCase()}.`);
 
   $('btnGuardarMes').disabled = true; $('btnGuardarMes').textContent = 'Guardando…';
   const { data, error } = await db.rpc('hdm_guardar_mensual', {

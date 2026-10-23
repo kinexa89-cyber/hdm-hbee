@@ -753,6 +753,13 @@ function dibujarCompetencia(ops){
       : `Adherencia de los ${rankeados.length} servicios con al menos ${MIN_OPORTUNIDADES} oportunidades observadas en el período elegido`;
 }
 
+/* Escala de los gráficos de porcentaje: 0 a 100, salvo los indicadores de valores chicos
+   (lo bueno es lo bajo y el rojo empieza en 20% o menos, como hemocultivos), que se acercan. */
+function escalaPct(maximo){
+  if(!(bundle && bundle.sentido === 'menor_mejor' && UMBRAL_MEDIO <= 20)) return 100;
+  return Math.min(100, Math.ceil(Math.max(UMBRAL_MEDIO * 2, maximo * 1.2) / 2) * 2);
+}
+
 function dibujarTendencia(ops){
   const m = new Map();
   for(const o of ops){
@@ -765,16 +772,17 @@ function dibujarTendencia(ops){
 
   const svg = $('tendencia');
   const W = 700, H = 210, mx = 36, my = 30;
+  const tope = escalaPct(Math.max(0, ...serie.map(s => s.p || 0)));
   const x = i => serie.length === 1 ? W/2 : mx + i * (W - mx*2) / (serie.length - 1);
-  const y = p => H - my - (p/100) * (H - my*2);
+  const y = p => H - my - (p/tope) * (H - my*2);
 
   let out = '';
-  [0,50,100].forEach(v => {
+  [0, tope/2, tope].forEach(v => {
     out += `<line class="eje" x1="${mx-6}" y1="${y(v)}" x2="${W-8}" y2="${y(v)}"></line>`;
     out += `<text class="etiqueta" x="0" y="${y(v)+4}">${v}%</text>`;
   });
   out += `<line class="meta" x1="${mx-6}" y1="${y(META)}" x2="${W-8}" y2="${y(META)}"></line>`;
-  out += `<text class="etiqueta meta" x="${W-8}" y="${y(META)-5}" text-anchor="end">objetivo ${META}%</text>`;
+  out += `<text class="etiqueta meta" x="${W-8}" y="${y(META)-5}" text-anchor="end">${bundle && bundle.sentido === 'menor_mejor' ? 'máximo' : 'objetivo'} ${META}%</text>`;
 
   if(serie.length > 1){
     out += `<path class="linea" d="${serie.map((s,i) => `${i?'L':'M'}${x(i)},${y(s.p)}`).join(' ')}"></path>`;
@@ -822,7 +830,9 @@ async function elegirBundle(clave){
   META         = Number(bundle.meta);
   UMBRAL_ORO   = Number(bundle.umbral_oro);
   const tipo = bundle.tipo || 'checklist';
-  const conteo = tipo === 'mensual';
+  // Mensual de dos números (cumplen / total): se lee como porcentaje, con semáforo.
+  const pctMes = tipo === 'mensual' && bundle.calculo === 'porcentaje';
+  const conteo = tipo === 'mensual' && !pctMes;
   const tasa = tipo === 'tasa';
 
   $('cabezaTurno').innerHTML = CABEZA_TURNO;   // la tasa la reemplaza; los demás usan la original
@@ -858,19 +868,20 @@ async function elegirBundle(clave){
   // Un indicador por caso sin pregunta de motivo (mortalidad) no muestra el panel de motivos.
   ver('panelMotivos',     tipo === 'evento' && !(bundle.etiqueta_no && !bundle.pregunta_motivo));
   ver('panelDesglose',    conteo);
-  ver('panelMeses',       conteo || tasa);
+  ver('panelMeses',       conteo || tasa || pctMes);
+  $('cabezaMeses').closest('table').style.minWidth = pctMes ? '0' : '420px';
   ver('panelTendencia',  !conteo);
-  ver('panelTurno',      !conteo && !compuesto);
-  ver('panelCama',        bundle.pide_cama && !conteo);
+  ver('panelTurno',      !conteo && !compuesto && !pctMes);
+  ver('panelCama',        bundle.pide_cama && !conteo && !pctMes);
   // En una tasa, turno y cama no tienen días propios: no pueden filtrar el cálculo.
-  ver('fTurno',          !conteo && !compuesto && !tasa);
-  ver('fCama',            bundle.pide_cama && !conteo && !tasa);
+  ver('fTurno',          !conteo && !compuesto && !tasa && !pctMes);
+  ver('fCama',            bundle.pide_cama && !conteo && !tasa && !pctMes);
   ver('semaforo',        !conteo);
   ver('medidor',         !conteo);
   ver('pieMedidor',      !conteo);
   ver('veredicto',       !conteo);
   // Un filtro escondido no puede seguir filtrando.
-  if(compuesto || conteo || tasa) $('fTurno').value = '';
+  if(compuesto || conteo || tasa || pctMes) $('fTurno').value = '';
   if(conteo || tasa) $('fCama').value = '';
   if(!bundle.propio) $('fEstamento').value = '';
   // Un indicador por evento cuenta la falla (extubación) o el cumplimiento (prono),
@@ -906,6 +917,11 @@ async function elegirBundle(clave){
           (bundle.descripcion ? ' ' + bundle.descripcion : '')
       : tipo === 'evento'
         ? 'Porcentaje de casos que terminaron en falla sobre el total registrado. Acá el número bueno es el bajo, así que el semáforo se lee al revés que en los demás indicadores.'
+        : pctMes
+          ? (bundle.sentido === 'menor_mejor'
+              ? 'Porcentaje del mes sobre el total, cargado a mes vencido por cada sector. Acá el número bueno es el bajo.'
+              : 'Porcentaje del mes: cuántos cumplen sobre el total, cargado a mes vencido por cada sector.') +
+            (bundle.descripcion ? ' ' + bundle.descripcion : '')
         : conteo
           ? 'Días cargados por el servicio, mes a mes y por sector, a mes vencido. No es un porcentaje: es un conteo, y sirve de denominador para otros indicadores.'
           : compuesto
@@ -916,11 +932,11 @@ async function elegirBundle(clave){
   $('sinDatos').textContent =
     bundle.propio ? 'No hay observaciones registradas con esos filtros.'
     : tipo === 'evento' ? 'No hay casos registrados con esos filtros.'
-    : conteo ? 'Todavía no hay meses cargados para ese período.'
+    : conteo || pctMes ? 'Todavía no hay meses cargados para ese período.'
     : compuesto ? 'No hay controles de ninguno de los puntos del bundle con esos filtros.'
     : 'No hay controles registrados con esos filtros.';
   $('subTendencia').textContent =
-    (bundle.propio ? 'Adherencia' : cumpleEv ? 'Cumplimiento'
+    (bundle.propio ? 'Adherencia' : pctMes ? 'Porcentaje' : cumpleEv ? 'Cumplimiento'
       : tipo === 'evento' ? (bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? 'Porcentaje ' + porcentajeDe(bundle) : 'Porcentaje de falla')
       : compuesto ? 'Cumplimiento del bundle entero' : deGrupo ? 'Cumplimiento' : 'Cumplimiento del bundle') +
     ' mes a mes, últimos 12 meses. La línea punteada es el objetivo.';
@@ -932,7 +948,7 @@ async function elegirBundle(clave){
 function pintar(){
   if(!bundle) return;
   if(bundle.tipo === 'evento')  return pintarEvento();
-  if(bundle.tipo === 'mensual') return pintarMensual();
+  if(bundle.tipo === 'mensual') return bundle.calculo === 'porcentaje' ? pintarMensualPct() : pintarMensual();
   if(bundle.tipo === 'compuesto') return pintarCompuesto();
   if(bundle.tipo === 'tasa') return pintarTasa();
   if(!bundle.propio) return pintarBundle();
@@ -1646,6 +1662,82 @@ function agruparMotivos(casos){
 }
 
 /* ---------- Pintado de un conteo mensual ---------- */
+/* ---------- Mensual de dos números (num / den) ---------- */
+// Suma num y den por mes y sector.
+function juntarNumDen(rows){
+  const m = new Map();
+  for(const r of rows){
+    const k = r.periodo + '|' + r.servicio;
+    const g = m.get(k) || { periodo:r.periodo, servicio:r.servicio, num:0, den:0 };
+    if(r.item_clave === 'num') g.num += Number(r.valor);
+    if(r.item_clave === 'den') g.den += Number(r.valor);
+    m.set(k, g);
+  }
+  return [...m.values()].filter(g => g.den > 0);
+}
+// Los convierte en "oportunidades" para reusar los gráficos de siempre.
+const expandir = filasMes => filasMes.flatMap(g =>
+  Array.from({ length:g.den }, (_, i) => ({ periodo:g.periodo, servicio:g.servicio, higienizo: i < g.num })));
+
+function pintarMensualPct(){
+  const desde = periodoDesde();
+  const s = $('fServicio').value;
+  const filasMes = juntarNumDen(mensuales.filter(m => (!desde || m.periodo >= desde) && (!s || m.servicio === s)));
+
+  ver('cargando', false);
+  ver('sinDatos', filasMes.length === 0);
+  ver('contenido', filasMes.length > 0);
+  if(!filasMes.length) return;
+
+  const texto = c => (mensuales.find(m => m.item_clave === c) || {}).item_texto || (c === 'num' ? 'Cumplen' : 'Total');
+  const tNum = texto('num'), tDen = texto('den');
+  const num = filasMes.reduce((a, g) => a + g.num, 0), den = filasMes.reduce((a, g) => a + g.den, 0);
+  const global = pct(num, den), c = clase(global);
+  const meses = new Set(filasMes.map(g => g.periodo)).size;
+
+  $('adherencia').textContent = fmt(global);
+  $('adherencia').className = c;
+  $('adherenciaDetalle').textContent = `${num.toLocaleString('es-AR')} de ${den.toLocaleString('es-AR')} · ` +
+    `${meses} ${meses === 1 ? 'mes' : 'meses'}` + (s ? '' : ` · ${new Set(filasMes.map(g => g.servicio)).size} sectores`);
+  $('semaforo').className = 'semaforo ' + c;
+  const tope = escalaPct(global);
+  $('medidorRelleno').style.width = Math.min(100, global / tope * 100) + '%';
+  $('medidorRelleno').className = c;
+  $('marcaMeta').style.left = (META / tope * 100) + '%';
+  $('textoMeta').style.left = (META / tope * 100) + '%';
+  const menor = bundle.sentido === 'menor_mejor';
+  $('textoMeta').textContent = (menor ? 'máximo ' : 'objetivo ') + META + '%';
+  $('textoMeta').classList.toggle('derecha', META / tope * 100 < 35);
+  $('veredicto').textContent =
+    c === 'oro' ? (menor ? `Por debajo del ${UMBRAL_ORO}%: excelente.` : `¡Excelencia! ${UMBRAL_ORO}% o más.`)
+    : c === 'alto' ? (menor ? `Por debajo del máximo del ${META}%.` : `Por encima del objetivo del ${META}%.`)
+    : c === 'medio' ? (menor ? `Por encima del máximo del ${META}%.` : `Por debajo del objetivo del ${META}%.`)
+    : (menor ? `Supera el ${UMBRAL_MEDIO}%.` : `Por debajo del ${UMBRAL_MEDIO}%.`);
+  $('veredicto').className = 'veredicto ' + c;
+
+  // Mes a mes, sumando los sectores elegidos.
+  const porMes = new Map();
+  filasMes.forEach(g => { const x = porMes.get(g.periodo) || { num:0, den:0, sectores:0 };
+    x.num += g.num; x.den += g.den; x.sectores++; porMes.set(g.periodo, x); });
+  $('subMeses').textContent = `${tNum} sobre ${tDen.charAt(0).toLowerCase() + tDen.slice(1)}, mes a mes` +
+    (s ? ` en ${s}` : ', sumando los sectores');
+  $('cabezaMeses').innerHTML = '<th>Mes</th><th class="num">Cuenta</th><th class="num">%</th>';
+  $('tablaMeses').innerHTML = [...porMes.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([per, x]) => {
+    const p = pct(x.num, x.den);
+    return `<tr><td>${nombreMes(per)}${s ? '' : `<br><span style="font-size:.72rem;color:var(--tinta-suave)">${x.sectores} ${x.sectores === 1 ? 'sector' : 'sectores'}</span>`}</td>
+      <td class="num">${x.num.toLocaleString('es-AR')} de ${x.den.toLocaleString('es-AR')}</td>
+      <td class="num pct ${clase(p)}">${fmt(p)}</td></tr>`;
+  }).join('');
+
+  const ops = expandir(filasMes);
+  $('subSector').textContent = 'Porcentaje de cada sector en el período';
+  barras('porSector', agrupar(ops, 'servicio'));
+  dibujarTendencia(ops);
+
+  $('pieActualizado').textContent =
+    'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
 function pintarMensual(){
   const desde = periodoDesde();
   const s = $('fServicio').value;
@@ -1882,7 +1974,7 @@ let filtroEstado = '';
 function areaDe(b){ return b.area || (b.propio ? 'Higiene de manos' : 'Otros indicadores'); }
 
 const TIPO_CHIP = b => b.propio ? 'Observación' : ({ compuesto:'Bundle', checklist:'Control',
-  evento:'Por caso', tasa:'Tasa', mensual:'Conteo' })[b.tipo || 'checklist'] || '';
+  evento:'Por caso', tasa:'Tasa', mensual: b.calculo === 'porcentaje' ? 'Mensual' : 'Conteo' })[b.tipo || 'checklist'] || '';
 
 const ESTADO_TXT = { oro:'Excelencia', alto:'En meta', medio:'Atención', bajo:'Fuera de meta',
                      sindatos:'Sin datos en el período', na:'No se mide en este sector', info:'Conteo mensual' };
@@ -1923,6 +2015,20 @@ function resumen(b, d){
     if(s && !b.propio && b.sectores && b.sectores.length && !b.sectores.includes(s))
       return { estado:'na', valor:'—', detalle:`No se mide en ${s}`, serie:[] };
 
+    if(t === 'mensual' && b.calculo === 'porcentaje'){
+      const desde = periodoDesde();
+      const sec = juntarNumDen((d.mensuales || []).filter(m => !s || m.servicio === s));
+      const dentro = sec.filter(g => !desde || g.periodo >= desde);
+      const serie = seriePct(expandir(sec));
+      const menor = b.sentido === 'menor_mejor';
+      const meta = menor ? `máximo ${META}%` : `objetivo ${META}%`;
+      if(!dentro.length) return { estado:'sindatos', valor:'—', detalle:'Sin meses cargados en el período', serie, meta };
+      const num = dentro.reduce((a, g) => a + g.num, 0), den = dentro.reduce((a, g) => a + g.den, 0);
+      const p = pct(num, den);
+      const meses = new Set(dentro.map(g => g.periodo)).size;
+      return { estado:clase(p), valor:fmt(p), meta,
+               detalle:`${num.toLocaleString('es-AR')} de ${den.toLocaleString('es-AR')} · ${meses} ${meses === 1 ? 'mes' : 'meses'}`, serie };
+    }
     if(t === 'mensual'){
       const desde = periodoDesde();
       const sec = (d.mensuales || []).filter(m => !s || m.servicio === s);
