@@ -608,6 +608,10 @@ function armarCompuesto(regs, obsHdm, b = bundle){
 
 // Baja solo la primera letra: "Con DAUCI" -> "con DAUCI".
 const minus = t => t ? t.charAt(0).toLowerCase() + t.slice(1) : '';
+// Cómo se nombra lo que se cuenta en un indicador "menor es mejor": texto_cuenta si está, si no la etiqueta del botón.
+const cuentaTxt = b => b.texto_cuenta || minus(b.etiqueta_no);
+// "porcentaje con DAUCI" pero "porcentaje de fallecidos".
+const porcentajeDe = b => /^(con|sin) /.test(cuentaTxt(b)) ? cuentaTxt(b) : 'de ' + cuentaTxt(b);
 function pct(parte, total){ return total ? Math.round(parte / total * 1000) / 10 : null; }
 /* En la mayoría de los indicadores, más alto es mejor. En otros, como la falla
    de extubación, es al revés: ahí los mismos umbrales se leen de arriba abajo. */
@@ -851,7 +855,8 @@ async function elegirBundle(clave){
   ver('panelFaltantes',   compuesto);
   ver('panelResultado',   compuesto && !!bundle.tasa_resultado);
   ver('panelCruce',       tipo === 'checklist' && !bundle.propio && bundle.pide_cama && !deGrupo);
-  ver('panelMotivos',     tipo === 'evento');
+  // Un indicador por caso sin pregunta de motivo (mortalidad) no muestra el panel de motivos.
+  ver('panelMotivos',     tipo === 'evento' && !(bundle.etiqueta_no && !bundle.pregunta_motivo));
   ver('panelDesglose',    conteo);
   ver('panelMeses',       conteo || tasa);
   ver('panelTendencia',  !conteo);
@@ -875,7 +880,7 @@ async function elegirBundle(clave){
     ? 'Oportunidades observadas y adherencia'
     : cumpleEv ? 'Casos registrados y cumplimiento'
     : tipo === 'evento' && bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida'
-      ? `Casos registrados y porcentaje ${minus(bundle.etiqueta_no)}`
+      ? `Casos registrados y porcentaje ${porcentajeDe(bundle)}`
     : tipo === 'evento' ? 'Casos registrados y porcentaje de falla'
     : deGrupo ? 'Controles cargados y cumplimiento'
     : 'Controles cargados y cumplimiento del bundle';
@@ -897,7 +902,7 @@ async function elegirBundle(clave){
         ? `Porcentaje de casos con criterio en los que se cumplió la conducta (${minus(bundle.etiqueta_si || 'cumple')}), sobre el total registrado.` +
           (bundle.descripcion ? ' ' + bundle.descripcion : '')
       : tipo === 'evento' && bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida'
-        ? `Porcentaje de pacientes registrados ${minus(bundle.etiqueta_no)}, sobre el total cargado. Acá el número bueno es el bajo, así que el semáforo se lee al revés.` +
+        ? `Porcentaje de pacientes registrados ${cuentaTxt(bundle)}, sobre el total cargado. Acá el número bueno es el bajo, así que el semáforo se lee al revés.` +
           (bundle.descripcion ? ' ' + bundle.descripcion : '')
       : tipo === 'evento'
         ? 'Porcentaje de casos que terminaron en falla sobre el total registrado. Acá el número bueno es el bajo, así que el semáforo se lee al revés que en los demás indicadores.'
@@ -916,7 +921,7 @@ async function elegirBundle(clave){
     : 'No hay controles registrados con esos filtros.';
   $('subTendencia').textContent =
     (bundle.propio ? 'Adherencia' : cumpleEv ? 'Cumplimiento'
-      : tipo === 'evento' ? (bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? 'Porcentaje ' + minus(bundle.etiqueta_no) : 'Porcentaje de falla')
+      : tipo === 'evento' ? (bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? 'Porcentaje ' + porcentajeDe(bundle) : 'Porcentaje de falla')
       : compuesto ? 'Cumplimiento del bundle entero' : deGrupo ? 'Cumplimiento' : 'Cumplimiento del bundle') +
     ' mes a mes, últimos 12 meses. La línea punteada es el objetivo.';
 
@@ -1513,7 +1518,7 @@ function pintarEvento(){
   $('adherencia').textContent = fmt(global);
   $('adherencia').className = c;
   // Extubación habla de fallas; los demás (DAUCI) usan su propia etiqueta.
-  const etNo = bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? minus(bundle.etiqueta_no) : null;
+  const etNo = bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? cuentaTxt(bundle) : null;
   $('adherenciaDetalle').textContent = etNo
     ? `${fallas} de ${ops.length} ${ops.length === 1 ? 'paciente' : 'pacientes'} ${etNo}`
     : `${fallas} ${fallas === 1 ? 'falla' : 'fallas'} en ${ops.length} ${ops.length === 1 ? 'caso' : 'casos'}`;
@@ -1532,7 +1537,7 @@ function pintarEvento(){
        : c === 'bajo' ? `Supera el ${UMBRAL_MEDIO}%.`
        : c === 'medio' ? `Por encima del máximo del ${META}%.`
        : `Por debajo del máximo del ${META}%.`) +
-      (peor ? ` ${peor.n} de ${fallas}: ${peor.nombre}.` : '')
+      (peor && peor.nombre !== 'Sin especificar' ? ` ${peor.n} de ${fallas}: ${peor.nombre}.` : '')
     : c === 'oro'  ? `La falla está por debajo del ${UMBRAL_ORO}%.`
     : c === 'bajo' ? `La falla supera el ${UMBRAL_MEDIO}%.` + (peor ? ` El motivo más frecuente es ${peor.nombre.toLowerCase()}.` : '')
     : peor ? `El motivo más frecuente es ${peor.nombre.toLowerCase()}: ${peor.n} de ${fallas}.`
@@ -1968,7 +1973,7 @@ function resumen(b, d){
     const n = ops.length;
     const detalle = b.propio ? `${si} de ${n} oportunidades`
       : t === 'compuesto' ? `${si} de ${n} ${n === 1 ? 'cama-día completa' : 'camas-día completas'}`
-      : t === 'evento' ? `${si} de ${n} ${n === 1 ? 'caso' : 'casos'} · ${minus(menor ? (b.etiqueta_no || 'fallida') : (b.etiqueta_si || 'cumple'))}`
+      : t === 'evento' ? `${si} de ${n} ${n === 1 ? 'caso' : 'casos'} · ${menor ? (b.etiqueta_no ? cuentaTxt(b) : 'fallida') : minus(b.etiqueta_si || 'cumple')}`
       : `${si} de ${n} controles cumplidos`;
     return { estado:clase(p), valor:fmt(p), detalle, serie, meta };
   });
