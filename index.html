@@ -390,6 +390,10 @@ ul.reinicios li span{color:var(--tinta-suave);white-space:nowrap}
             <label for="inFechaEvento">Fecha</label>
             <input id="inFechaEvento" type="date">
           </div>
+          <div class="campo oculto" id="cajaValor">
+            <label for="inValor" id="preguntaValor">Puntaje</label>
+            <input id="inValor" type="number" inputmode="numeric" step="1" style="width:100%;padding:13px 14px;border:1px solid var(--linea);border-radius:var(--radio);background:var(--superficie);color:var(--tinta)">
+          </div>
           <div class="grilla" id="grillaResultado">
             <button class="opcion si" data-valor="si" id="botonSi">Exitosa</button>
             <button class="opcion no" data-valor="no" id="botonNo">Fallida</button>
@@ -1103,12 +1107,21 @@ async function prepararEvento(){
       .select('clave,texto,orden')
       .eq('bundle', bundle.clave).eq('tipo', 'motivo').eq('activo', true).order('orden'),
     db.from('hdm_bundles')
-      .select('descripcion,etiqueta_si,etiqueta_no,pregunta_motivo').eq('clave', bundle.clave).maybeSingle()
+      .select('*').eq('clave', bundle.clave).maybeSingle()
   ]);
   motivos = data || [];
   bundle.etiqueta_si = (def && def.etiqueta_si) || 'Exitosa';
   bundle.etiqueta_no = (def && def.etiqueta_no) || 'Fallida';
   bundle.pregunta_motivo = (def && def.pregunta_motivo) || '¿Por qué falló?';
+  // Algunos indicadores por caso piden además un número (el puntaje SAPS II, por ejemplo).
+  bundle.pregunta_valor = def ? def.pregunta_valor || null : null;
+  bundle.valor_min = def && def.valor_min != null ? Number(def.valor_min) : null;
+  bundle.valor_max = def && def.valor_max != null ? Number(def.valor_max) : null;
+  ver('cajaValor', !!bundle.pregunta_valor);
+  $('preguntaValor').textContent = bundle.pregunta_valor || '';
+  $('inValor').value = '';
+  if(bundle.valor_min != null) $('inValor').min = bundle.valor_min; else $('inValor').removeAttribute('min');
+  if(bundle.valor_max != null) $('inValor').max = bundle.valor_max; else $('inValor').removeAttribute('max');
   $('pistaEvento').textContent = (def && def.descripcion) || bundle.descripcion || 'Marcá cómo salió.';
   $('botonSi').textContent = bundle.etiqueta_si;
   $('botonNo').textContent = bundle.etiqueta_no;
@@ -1140,6 +1153,15 @@ async function guardarEvento(){
   if(selEvento.exito === null) return mostrarAviso('avisoCarga','Falta marcar cómo salió.');
   if(!selEvento.exito && motivos.length && !selEvento.motivo)
     return mostrarAviso('avisoCarga', `Falta responder: ${bundle.pregunta_motivo}`);
+  let valor = null;
+  if(bundle.pregunta_valor){
+    if($('inValor').value === '') return mostrarAviso('avisoCarga', `Falta completar: ${bundle.pregunta_valor}`);
+    valor = Number($('inValor').value);
+    if(!Number.isInteger(valor) || (bundle.valor_min != null && valor < bundle.valor_min) ||
+       (bundle.valor_max != null && valor > bundle.valor_max))
+      return mostrarAviso('avisoCarga', `${bundle.pregunta_valor}: tiene que ser un número entero` +
+        (bundle.valor_min != null && bundle.valor_max != null ? ` entre ${bundle.valor_min} y ${bundle.valor_max}.` : '.'));
+  }
 
   $('btnGuardar').disabled = true; $('btnGuardar').textContent = 'Guardando…';
   const { error } = await db.rpc('hdm_guardar_evento', {
@@ -1150,6 +1172,7 @@ async function guardarEvento(){
     p_cama: cama ? `${ctx.servicio} ${cama}` : null,
     p_exito: selEvento.exito,
     p_motivo: selEvento.motivo,
+    ...(bundle.pregunta_valor ? { p_valor: valor } : {}),
     p_observacion: $('inObservacion').value.trim() || null
   });
   $('btnGuardar').disabled = false; $('btnGuardar').textContent = 'Guardar';
@@ -1477,6 +1500,7 @@ function limpiarFormulario(){
   selItems = {};
   selEvento = { exito:null, motivo:null };
   selTasa = { motivo:null, reintub:null };
+  if($('inValor')) $('inValor').value = '';
   ver('cajaMotivo', false);
   $('inObservacion').value = '';
 }

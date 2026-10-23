@@ -832,11 +832,13 @@ async function elegirBundle(clave){
   const tipo = bundle.tipo || 'checklist';
   // Mensual de dos números (cumplen / total): se lee como porcentaje, con semáforo.
   const pctMes = tipo === 'mensual' && bundle.calculo === 'porcentaje';
+  // Mortalidad estandarizada (SAPS II): observada / predicha.
+  const smr = tipo === 'evento' && bundle.calculo === 'smr';
   const conteo = tipo === 'mensual' && !pctMes;
   const tasa = tipo === 'tasa';
 
   $('cabezaTurno').innerHTML = CABEZA_TURNO;   // la tasa la reemplaza; los demás usan la original
-  ver('referencia', !conteo && !tasa);
+  ver('referencia', !conteo && !tasa && !smr);
   $('referencia').innerHTML = bundle.sentido === 'menor_mejor'
     ? `<span><i class="d"></i> Dorado: menos de ${UMBRAL_ORO}%</span>` +
       `<span><i class="v"></i> Verde: de ${UMBRAL_ORO}% a ${META}%</span>` +
@@ -866,16 +868,16 @@ async function elegirBundle(clave){
   ver('panelResultado',   compuesto && !!bundle.tasa_resultado);
   ver('panelCruce',       tipo === 'checklist' && !bundle.propio && bundle.pide_cama && !deGrupo);
   // Un indicador por caso sin pregunta de motivo (mortalidad) no muestra el panel de motivos.
-  ver('panelMotivos',     tipo === 'evento' && !(bundle.etiqueta_no && !bundle.pregunta_motivo));
+  ver('panelMotivos',     tipo === 'evento' && !smr && !(bundle.etiqueta_no && !bundle.pregunta_motivo));
   ver('panelDesglose',    conteo);
-  ver('panelMeses',       conteo || tasa || pctMes);
+  ver('panelMeses',       conteo || tasa || pctMes || smr);
   $('cabezaMeses').closest('table').style.minWidth = pctMes ? '0' : '420px';
   ver('panelTendencia',  !conteo);
-  ver('panelTurno',      !conteo && !compuesto && !pctMes);
-  ver('panelCama',        bundle.pide_cama && !conteo && !pctMes);
+  ver('panelTurno',      !conteo && !compuesto && !pctMes && !smr);
+  ver('panelCama',        bundle.pide_cama && !conteo && !pctMes && !smr);
   // En una tasa, turno y cama no tienen días propios: no pueden filtrar el cálculo.
-  ver('fTurno',          !conteo && !compuesto && !tasa && !pctMes);
-  ver('fCama',            bundle.pide_cama && !conteo && !tasa && !pctMes);
+  ver('fTurno',          !conteo && !compuesto && !tasa && !pctMes && !smr);
+  ver('fCama',            bundle.pide_cama && !conteo && !tasa && !pctMes && !smr);
   ver('semaforo',        !conteo);
   ver('medidor',         !conteo);
   ver('pieMedidor',      !conteo);
@@ -906,8 +908,10 @@ async function elegirBundle(clave){
   $('thPct').textContent   = bundle.propio ? 'Adherencia'
     : cumpleEv ? 'Cumplimiento'
     : tipo === 'evento' ? (bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? 'Porcentaje' : 'Falla') : 'Cumplimiento';
-  $('glosaHero').textContent =
-    bundle.propio
+  $('glosaHero').textContent = smr
+    ? 'Mortalidad estandarizada: muertes observadas sobre las que predice el SAPS II de cada paciente. ' +
+      'Menos de 1 es mejor que lo esperado para la gravedad de los pacientes; más de 1, peor.'
+    : bundle.propio
       ? 'Porcentaje de oportunidades observadas en las que el profesional se higienizó las manos. Cada observación aporta hasta dos oportunidades: antes del contacto con el paciente y después del contacto con su entorno.'
       : cumpleEv
         ? `Porcentaje de casos con criterio en los que se cumplió la conducta (${minus(bundle.etiqueta_si || 'cumple')}), sobre el total registrado.` +
@@ -1435,7 +1439,7 @@ function pintarResultado(completas){
     'Que los dos números se muevan juntos no prueba que uno cause el otro, pero si la adherencia sube y la tasa no baja, vale la pena mirar.';
 }
 
-function dibujarTendenciaTasa(serie, meta){
+function dibujarTendenciaTasa(serie, meta, formato = fmtTasa){
   const svg = $('tendencia');
   const W = 700, H = 210, mx = 36, my = 30;
   const valores = serie.map(s => s.r).filter(r => r !== null);
@@ -1449,7 +1453,7 @@ function dibujarTendenciaTasa(serie, meta){
     out += `<text class="etiqueta" x="0" y="${y(v)+4}">${v}</text>`;
   });
   out += `<line class="meta" x1="${mx-6}" y1="${y(meta)}" x2="${W-8}" y2="${y(meta)}"></line>`;
-  out += `<text class="etiqueta meta" x="${W-8}" y="${y(meta)-5}" text-anchor="end">meta: menos de ${fmtMeta(meta)}</text>`;
+  out += `<text class="etiqueta meta" x="${W-8}" y="${y(meta)-5}" text-anchor="end">meta: menos de ${formato === fmtTasa ? fmtMeta(meta) : formato(meta)}</text>`;
 
   // La línea se corta en los meses sin días cargados.
   const tramos = []; let tramo = [];
@@ -1466,7 +1470,7 @@ function dibujarTendenciaTasa(serie, meta){
       out += `<text class="etiqueta" x="${x(i)}" y="${y(0)-8}" text-anchor="middle">s/d</text>`;
     } else {
       out += `<circle class="punto ${claseTasa(s.r, meta)}" cx="${x(i)}" cy="${y(s.r)}" r="5"></circle>`;
-      out += `<text class="valor" x="${x(i)}" y="${y(s.r)-12}" text-anchor="middle">${fmtTasa(s.r)}</text>`;
+      out += `<text class="valor" x="${x(i)}" y="${y(s.r)-12}" text-anchor="middle">${formato(s.r)}</text>`;
     }
   });
   svg.innerHTML = out;
@@ -1516,6 +1520,76 @@ function pintarCruce(regs){
 }
 
 /* ---------- Pintado de un indicador por evento ---------- */
+/* ---------- Mortalidad estandarizada por SAPS II ----------
+   Cada egreso trae su puntaje SAPS II (valor) y si egresó vivo (exito).
+   Mortalidad predicha (Le Gall 1993): logit = -7,7631 + 0,0737·SAPS + 0,9971·ln(SAPS + 1). */
+function predichaSAPS(saps){
+  const x = -7.7631 + 0.0737 * saps + 0.9971 * Math.log(saps + 1);
+  return 1 / (1 + Math.exp(-x));
+}
+const fmtSMR = r => r === null || !isFinite(r) ? '—' : r.toFixed(2).replace('.', ',');
+function calcularSMR(casos){
+  const validos = casos.filter(c => c.valor !== null && c.valor !== undefined);
+  const n = validos.length;
+  const muertes = validos.filter(c => !c.exito).length;
+  const esperadas = validos.reduce((a, c) => a + predichaSAPS(Number(c.valor)), 0);
+  return { n, muertes, esperadas,
+           smr: esperadas > 0 ? muertes / esperadas : null,
+           obs: n ? muertes / n * 100 : null, pred: n ? esperadas / n * 100 : null,
+           saps: n ? validos.reduce((a, c) => a + Number(c.valor), 0) / n : null };
+}
+// Semáforo del SMR: dorado < umbral_oro, verde < meta, amarillo < umbral_medio, rojo arriba.
+const claseSMR = r => r === null ? '' : r < UMBRAL_ORO ? 'oro' : r < META ? 'alto' : r < UMBRAL_MEDIO ? 'medio' : 'bajo';
+
+function pintarSMR(casos){
+  const R = calcularSMR(casos);
+  const c = claseSMR(R.smr);
+  const pct1 = v => v === null ? '—' : v.toFixed(1).replace('.', ',') + '%';
+  const num = v => v.toFixed(1).replace('.', ',');
+
+  $('adherencia').textContent = fmtSMR(R.smr);
+  $('adherencia').className = c;
+  $('adherenciaDetalle').textContent =
+    `${R.muertes} ${R.muertes === 1 ? 'fallecido' : 'fallecidos'} de ${R.n} ${R.n === 1 ? 'egreso' : 'egresos'} · se esperaban ${num(R.esperadas)}`;
+  $('semaforo').className = 'semaforo ' + c;
+  // Medidor de 0 a 2: la meta (1) queda en el medio.
+  $('medidorRelleno').style.width = Math.min(100, (R.smr || 0) / 2 * 100) + '%';
+  $('medidorRelleno').className = c;
+  $('marcaMeta').style.left = (META / 2 * 100) + '%';
+  $('textoMeta').style.left = (META / 2 * 100) + '%';
+  $('textoMeta').textContent = 'meta: menos de ' + fmtSMR(META);
+  $('textoMeta').classList.remove('derecha');
+  $('veredicto').textContent = R.smr === null ? 'Todavía no hay egresos con SAPS II cargado.'
+    : `Mortalidad observada ${pct1(R.obs)} contra ${pct1(R.pred)} predicha por el SAPS II (promedio ${Math.round(R.saps)} puntos). ` +
+      (R.smr < 1 ? 'Murieron menos pacientes de los esperados.' : R.smr > 1 ? 'Murieron más pacientes de los esperados.' : 'Igual a lo esperado.');
+  $('veredicto').className = 'veredicto ' + c;
+
+  // Mes a mes y por sector, con la misma tabla.
+  const cabeza = primera => `<th>${primera}</th><th class="num">Egresos</th><th class="num">SAPS II</th>` +
+    '<th class="num">Observada</th><th class="num">Predicha</th><th class="num">SMR</th>';
+  const fila = (primera, r) => `<tr><td>${primera}</td><td class="num">${r.n}</td>` +
+    `<td class="num">${r.saps === null ? '—' : Math.round(r.saps)}</td><td class="num">${pct1(r.obs)}</td>` +
+    `<td class="num">${pct1(r.pred)}</td><td class="num pct ${claseSMR(r.smr)}">${fmtSMR(r.smr)}</td></tr>`;
+
+  const periodos = [...new Set(casos.map(x => x.periodo))].sort().reverse();
+  $('subMeses').textContent = 'Egresos, SAPS II promedio, mortalidad observada y predicha, y SMR de cada mes';
+  $('cabezaMeses').innerHTML = cabeza('Mes');
+  $('tablaMeses').innerHTML = periodos.map(per => fila(nombreMes(per), calcularSMR(casos.filter(x => x.periodo === per)))).join('');
+
+  const sectores = [...new Set(casos.map(x => x.servicio))].sort();
+  $('subSector').textContent = 'SMR de cada sector en el período';
+  $('porSector').innerHTML = `<div style="overflow-x:auto"><table style="min-width:420px"><thead><tr>${cabeza('Sector')}</tr></thead>` +
+    `<tbody>${sectores.map(sec => fila(sec, calcularSMR(casos.filter(x => x.servicio === sec)))).join('')}</tbody></table></div>`;
+
+  $('subTendencia').textContent = 'SMR mes a mes. La línea punteada es la meta: por debajo de 1, mejor que lo esperado.';
+  dibujarTendenciaTasa(periodos.slice().reverse().slice(-12)
+    .map(per => ({ mes:per, r: calcularSMR(casos.filter(x => x.periodo === per)).smr })), META, fmtSMR);
+  // El punto de la tendencia usa el semáforo de las tasas (bajo la meta = verde).
+
+  $('pieActualizado').textContent =
+    'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
 function pintarEvento(){
   const casos = filtrar(eventos);
 
@@ -1524,6 +1598,7 @@ function pintarEvento(){
   ver('contenido', casos.length > 0);
   if(!casos.length) return;
 
+  if(bundle.calculo === 'smr') return pintarSMR(casos);
   // Según el sentido del indicador se cuenta la falla (extubación) o el cumplimiento (prono).
   if(bundle.sentido !== 'menor_mejor') return pintarEventoCumple(casos);
   const ops = casos.map(e => ({ ...e, higienizo: !e.exito }));
@@ -1927,7 +2002,7 @@ async function datosDe(b, forzar){
     }
   } else if(b.tipo === 'evento'){
     d.eventos = await bajarTodo('hdm_publico_eventos',
-      'bundle,fecha,periodo,turno,servicio,cama,exito,motivo,motivo_texto',
+      'bundle,fecha,periodo,turno,servicio,cama,exito,motivo,motivo_texto,valor',
       { columna:'bundle', valor:b.clave });
   } else if(b.tipo === 'mensual'){
     // Un conteo mensual no tiene fecha: se ordena por período.
@@ -1974,7 +2049,7 @@ let filtroEstado = '';
 function areaDe(b){ return b.area || (b.propio ? 'Higiene de manos' : 'Otros indicadores'); }
 
 const TIPO_CHIP = b => b.propio ? 'Observación' : ({ compuesto:'Bundle', checklist:'Control',
-  evento:'Por caso', tasa:'Tasa', mensual: b.calculo === 'porcentaje' ? 'Mensual' : 'Conteo' })[b.tipo || 'checklist'] || '';
+  evento: b.calculo === 'smr' ? 'Score' : 'Por caso', tasa:'Tasa', mensual: b.calculo === 'porcentaje' ? 'Mensual' : 'Conteo' })[b.tipo || 'checklist'] || '';
 
 const ESTADO_TXT = { oro:'Excelencia', alto:'En meta', medio:'Atención', bajo:'Fuera de meta',
                      sindatos:'Sin datos en el período', na:'No se mide en este sector', info:'Conteo mensual' };
@@ -2063,6 +2138,16 @@ function resumen(b, d){
                serie, meta:`meta: menos de ${fmtMeta(b.meta)}` };
     }
 
+    if(t === 'evento' && b.calculo === 'smr'){
+      const sec = soloSector(d.eventos || []);
+      const R = calcularSMR(filtrar(d.eventos || []));
+      const porMes = [...new Set(sec.map(x => x.periodo))].sort().slice(-6)
+        .map(mes => ({ mes, v: calcularSMR(sec.filter(x => x.periodo === mes)).smr }));
+      const meta = `meta: menos de ${fmtSMR(META)}`;
+      if(R.smr === null) return { estado:'sindatos', valor:'—', detalle:'Sin egresos con SAPS II en el período', serie:porMes, meta };
+      return { estado:claseSMR(R.smr), valor:fmtSMR(R.smr), unidad:'SMR', meta, serie:porMes,
+               detalle:`${R.muertes} de ${R.n} fallecidos · se esperaban ${R.esperadas.toFixed(1).replace('.', ',')}` };
+    }
     const base = filasDe(b, d);
     const ops = opsDe(b, filtrar(base));
     const serie = seriePct(opsDe(b, soloSector(base)));
