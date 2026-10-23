@@ -1254,8 +1254,12 @@ function calcularTasa(evs, dens, sectores){
 
 function claseTasa(r, meta){
   if(r === null || meta === null || meta === undefined) return '';
+  // Meta cero (decanulación no programada): sin eventos está bien, uno solo ya no.
+  if(Number(meta) === 0) return r === 0 ? 'alto' : 'bajo';
   return r < meta ? 'alto' : 'bajo';
 }
+// "menos de 10" o, si la meta es cero, "0".
+const textoMeta = m => Number(m) === 0 ? '0' : `menos de ${fmtMeta(m)}`;
 const fmtTasa = r => r === null ? '—' : r.toFixed(1).replace('.', ',');
 const fmtMeta = m => Number(m).toLocaleString('es-AR', { maximumFractionDigits:1 });
 
@@ -1294,8 +1298,8 @@ function pintarTasa(){
     const n = nDe(R.total, c), r = tasa(n, R.total.dias), k = claseTasa(r, c.meta);
     const estado = r === null ? `Todavía no hay ${unidad} cargados para calcularla`
       : c.meta === null ? ''
-      : r < c.meta ? `Por debajo de la meta (menos de ${fmtMeta(c.meta)})`
-      : `Por encima de la meta (menos de ${fmtMeta(c.meta)})`;
+      : claseTasa(r, c.meta) === 'alto' ? `Dentro de la meta (${textoMeta(c.meta)})`
+      : `Fuera de la meta (${textoMeta(c.meta)})`;
     const re = reDe(R.total, c);
     return `<div class="tasa ${k}">
       <h3>${c.clave ? c.nombre : bundle.nombre}</h3>
@@ -1408,7 +1412,7 @@ function pintarResultado(completas){
     <b class="${k}">${fmtTasa(r)}</b>
     <span class="u">por cada ${porCada.toLocaleString('es-AR')} ${unidad}</span>
     <p class="estado ${k}">${r === null ? `Todavía no hay ${unidad} cargados para calcularla`
-      : r < meta ? `Por debajo de la meta (menos de ${fmtMeta(meta)})` : `Por encima de la meta (menos de ${fmtMeta(meta)})`}</p>
+      : claseTasa(r, meta) === 'alto' ? `Dentro de la meta (${textoMeta(meta)})` : `Fuera de la meta (${textoMeta(meta)})`}</p>
     <p class="det">${R.total.n} ${R.total.n === 1 ? 'evento' : 'eventos'} en ${R.total.dias.toLocaleString('es-AR')} ${unidad}</p>
   </div>`;
 
@@ -1453,7 +1457,7 @@ function dibujarTendenciaTasa(serie, meta, formato = fmtTasa){
     out += `<text class="etiqueta" x="0" y="${y(v)+4}">${v}</text>`;
   });
   out += `<line class="meta" x1="${mx-6}" y1="${y(meta)}" x2="${W-8}" y2="${y(meta)}"></line>`;
-  out += `<text class="etiqueta meta" x="${W-8}" y="${y(meta)-5}" text-anchor="end">meta: menos de ${formato === fmtTasa ? fmtMeta(meta) : formato(meta)}</text>`;
+  out += `<text class="etiqueta meta" x="${W-8}" y="${y(meta)-5}" text-anchor="end">meta: ${formato === fmtTasa ? textoMeta(meta) : 'menos de ' + formato(meta)}</text>`;
 
   // La línea se corta en los meses sin días cargados.
   const tramos = []; let tramo = [];
@@ -2132,10 +2136,10 @@ function resumen(b, d){
         .filter(m => m.ok && m.dias > 0).slice(-6).map(m => ({ mes:m.periodo, v:m.n / m.dias * porCada }));
       const unidad = b.unidad || 'días';
       if(r === null) return { estado:'sindatos', valor:'—', detalle:`Faltan los ${unidad} del período`, serie,
-                              meta:`meta: menos de ${fmtMeta(b.meta)}` };
+                              meta:`meta: ${textoMeta(b.meta)}` };
       return { estado:claseTasa(r, Number(b.meta)), valor:fmtTasa(r), unidad:`por ${porCada.toLocaleString('es-AR')} ${unidad}`,
                detalle:`${R.total.n} ${R.total.n === 1 ? 'evento' : 'eventos'} en ${R.total.dias.toLocaleString('es-AR')} ${unidad}`,
-               serie, meta:`meta: menos de ${fmtMeta(b.meta)}` };
+               serie, meta:`meta: ${textoMeta(b.meta)}` };
     }
 
     if(t === 'evento' && b.calculo === 'smr'){
