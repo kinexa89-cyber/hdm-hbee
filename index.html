@@ -798,7 +798,8 @@ async function cargarBundles(){
     const d = (defs || []).find(x => x.clave === b.clave) || {};
     b.area = d.area || (b.propio ? 'Higiene de manos' : 'Otros indicadores');
     b.orden = d.orden ?? 999;
-    b.calculo = d.calculo || null;   // 'porcentaje' en los mensuales de dos números
+    b.calculo = d.calculo || null;   // 'porcentaje' o 'razon' en los mensuales de dos números
+    b.unidad = d.unidad || null;
   });
   misBundles.sort((a, b) => a.orden - b.orden);
 
@@ -812,6 +813,7 @@ const TIPO_CHIP = b => b.propio ? 'Observación' : ({ checklist:'Control', event
   tasa:'Por evento', mensual:'Mensual' })[b.tipo || 'checklist'] || '';
 const COMO = b => b.propio ? 'Una observación por persona, momentos 1 y 5'
   : b.calculo === 'porcentaje' ? 'Una vez por mes: cuántos cumplen sobre cuántos'
+  : b.calculo === 'razon' ? 'Una vez por mes, un sector por vez'
   : ({ checklist:'Un control por cama en cada ronda', evento:'Un registro por cada paciente',
        tasa:'Solo cuando sucede', mensual:'Una vez por mes, un sector por vez' })[b.tipo || 'checklist'] || '';
 
@@ -996,6 +998,7 @@ async function prepararMensual(){
     : sectoresTodos;
   $('inSectorMes').innerHTML = '<option value="">Elegir…</option>' +
     permitidos.map(v => `<option value="${v}">${v}</option>`).join('');
+  if(permitidos.length === 1) $('inSectorMes').value = permitidos[0];   // "Todo el servicio", por ejemplo
 
   const { data } = await db.from('hdm_bundle_items')
     .select('clave,texto,ayuda,orden')
@@ -1021,6 +1024,13 @@ function pintarTotales(){
   const suma = camposMes.reduce((a,c) => a + v(c.clave), 0);
 
   // Mensual de dos números: se muestra el porcentaje en vivo y se avisa si no cierra.
+  // Razón (prestaciones por kinesiólogo): se muestra el cociente en vivo.
+  if(bundle && bundle.calculo === 'razon' && camposMes.some(c => c.clave === 'num')){
+    const num = v('num'), den = v('den');
+    $('totalesMes').innerHTML = `<div><span>${bundle.unidad ? bundle.unidad.charAt(0).toUpperCase() + bundle.unidad.slice(1) : 'Razón'}</span>` +
+      `<b>${den ? (num / den).toFixed(1).replace('.', ',') : '—'}</b></div>`;
+    return;
+  }
   if(bundle && bundle.calculo === 'porcentaje'){
     const num = v('num'), den = v('den');
     $('totalesMes').innerHTML = den

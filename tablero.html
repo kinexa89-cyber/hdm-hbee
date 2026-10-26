@@ -242,7 +242,7 @@ footer p.credito{margin-top:12px;padding-top:10px;border-top:1px solid var(--lin
 .tiEstado.alto{color:var(--verde)} .tiEstado.alto i{background:var(--verde)}
 .tiEstado.medio{color:var(--ambar)} .tiEstado.medio i{background:var(--ambar)}
 .tiEstado.bajo{color:var(--rojo)} .tiEstado.bajo i{background:var(--rojo)}
-.tiEstado.info{color:var(--azul-700)} .tiEstado.info i{background:var(--azul-500)}
+.tiEstado.info,.tiEstado.razon{color:var(--azul-700)} .tiEstado.info i,.tiEstado.razon i{background:var(--azul-500)}
 .tiDetalle{font-size:.78rem;color:var(--tinta-suave)}
 .tiPie{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--linea);
   padding-top:8px;margin-top:auto}
@@ -511,7 +511,8 @@ let tasaDenom = [];         // días del conteo mensual que hace de denominador
 let tasaTipos = [];         // tipos de evento de la tasa, con su meta
 let resultado = null;       // tasa de resultado de un bundle entero: { def, evs, dens }
 let eventos = [];           // eventos sueltos (extubaciones, por ejemplo)
-let mensuales = [];         // conteos cargados mes a mes
+let mensuales = [];
+let fuenteRazon = [];       // numerador traído de otro conteo, para una razón         // conteos cargados mes a mes
 let catalogo = [];          // indicadores activos
 let bundle = null;          // el que se está mirando
 let gruposEstamento = {};   // 'Salud mental' -> Set de especialidades, para filtrar el grupo completo
@@ -617,6 +618,8 @@ function pct(parte, total){ return total ? Math.round(parte / total * 1000) / 10
    de extubación, es al revés: ahí los mismos umbrales se leen de arriba abajo. */
 function clase(p){
   if(p === null) return '';
+  // Meta cero: 0% está bien, cualquier otro valor no.
+  if(bundle && bundle.sentido === 'menor_mejor' && Number(META) === 0) return p === 0 ? 'alto' : 'bajo';
   if(bundle && bundle.sentido === 'menor_mejor')
     return p < UMBRAL_ORO ? 'oro' : p < META ? 'alto' : p < UMBRAL_MEDIO ? 'medio' : 'bajo';
   return p >= UMBRAL_ORO ? 'oro' : p >= META ? 'alto' : p >= UMBRAL_MEDIO ? 'medio' : 'bajo';
@@ -829,16 +832,19 @@ async function elegirBundle(clave){
   UMBRAL_MEDIO = Number(bundle.umbral_medio);
   META         = Number(bundle.meta);
   UMBRAL_ORO   = Number(bundle.umbral_oro);
+  $('marcaMeta').style.display = '';   // la meta cero la esconde
   const tipo = bundle.tipo || 'checklist';
   // Mensual de dos números (cumplen / total): se lee como porcentaje, con semáforo.
   const pctMes = tipo === 'mensual' && bundle.calculo === 'porcentaje';
   // Mortalidad estandarizada (SAPS II): observada / predicha.
   const smr = tipo === 'evento' && bundle.calculo === 'smr';
-  const conteo = tipo === 'mensual' && !pctMes;
+  // Razón mensual (prestaciones por kinesiólogo): un cociente sin semáforo.
+  const razon = tipo === 'mensual' && bundle.calculo === 'razon';
+  const conteo = tipo === 'mensual' && !pctMes && !razon;
   const tasa = tipo === 'tasa';
 
   $('cabezaTurno').innerHTML = CABEZA_TURNO;   // la tasa la reemplaza; los demás usan la original
-  ver('referencia', !conteo && !tasa && !smr);
+  ver('referencia', !conteo && !tasa && !smr && !razon && Number(META) !== 0);
   $('referencia').innerHTML = bundle.sentido === 'menor_mejor'
     ? `<span><i class="d"></i> Dorado: menos de ${UMBRAL_ORO}%</span>` +
       `<span><i class="v"></i> Verde: de ${UMBRAL_ORO}% a ${META}%</span>` +
@@ -870,20 +876,20 @@ async function elegirBundle(clave){
   // Un indicador por caso sin pregunta de motivo (mortalidad) no muestra el panel de motivos.
   ver('panelMotivos',     tipo === 'evento' && !smr && !(bundle.etiqueta_no && !bundle.pregunta_motivo));
   ver('panelDesglose',    conteo);
-  ver('panelMeses',       conteo || tasa || pctMes || smr);
-  $('cabezaMeses').closest('table').style.minWidth = pctMes ? '0' : '420px';
+  ver('panelMeses',       conteo || tasa || pctMes || smr || razon);
+  $('cabezaMeses').closest('table').style.minWidth = pctMes || razon ? '0' : '420px';
   ver('panelTendencia',  !conteo);
-  ver('panelTurno',      !conteo && !compuesto && !pctMes && !smr);
-  ver('panelCama',        bundle.pide_cama && !conteo && !pctMes && !smr);
+  ver('panelTurno',      !conteo && !compuesto && !pctMes && !smr && !razon);
+  ver('panelCama',        bundle.pide_cama && !conteo && !pctMes && !smr && !razon);
   // En una tasa, turno y cama no tienen días propios: no pueden filtrar el cálculo.
-  ver('fTurno',          !conteo && !compuesto && !tasa && !pctMes && !smr);
-  ver('fCama',            bundle.pide_cama && !conteo && !tasa && !pctMes && !smr);
-  ver('semaforo',        !conteo);
-  ver('medidor',         !conteo);
-  ver('pieMedidor',      !conteo);
-  ver('veredicto',       !conteo);
+  ver('fTurno',          !conteo && !compuesto && !tasa && !pctMes && !smr && !razon);
+  ver('fCama',            bundle.pide_cama && !conteo && !tasa && !pctMes && !smr && !razon);
+  ver('semaforo',        !conteo && !razon);
+  ver('medidor',         !conteo && !razon);
+  ver('pieMedidor',      !conteo && !razon);
+  ver('veredicto',       !conteo && !razon);
   // Un filtro escondido no puede seguir filtrando.
-  if(compuesto || conteo || tasa || pctMes) $('fTurno').value = '';
+  if(compuesto || conteo || tasa || pctMes || razon) $('fTurno').value = '';
   if(conteo || tasa) $('fCama').value = '';
   if(!bundle.propio) $('fEstamento').value = '';
   // Un indicador por evento cuenta la falla (extubación) o el cumplimiento (prono),
@@ -921,6 +927,9 @@ async function elegirBundle(clave){
           (bundle.descripcion ? ' ' + bundle.descripcion : '')
       : tipo === 'evento'
         ? 'Porcentaje de casos que terminaron en falla sobre el total registrado. Acá el número bueno es el bajo, así que el semáforo se lee al revés que en los demás indicadores.'
+        : razon
+          ? 'Cociente del mes, cargado a mes vencido por cada sector. No lleva semáforo: sirve para ver cómo cambia mes a mes y entre sectores.' +
+            (bundle.descripcion ? ' ' + bundle.descripcion : '')
         : pctMes
           ? (bundle.sentido === 'menor_mejor'
               ? 'Porcentaje del mes sobre el total, cargado a mes vencido por cada sector. Acá el número bueno es el bajo.'
@@ -936,11 +945,11 @@ async function elegirBundle(clave){
   $('sinDatos').textContent =
     bundle.propio ? 'No hay observaciones registradas con esos filtros.'
     : tipo === 'evento' ? 'No hay casos registrados con esos filtros.'
-    : conteo || pctMes ? 'Todavía no hay meses cargados para ese período.'
+    : conteo || pctMes || razon ? 'Todavía no hay meses cargados para ese período.'
     : compuesto ? 'No hay controles de ninguno de los puntos del bundle con esos filtros.'
     : 'No hay controles registrados con esos filtros.';
   $('subTendencia').textContent =
-    (bundle.propio ? 'Adherencia' : pctMes ? 'Porcentaje' : cumpleEv ? 'Cumplimiento'
+    (bundle.propio ? 'Adherencia' : razon ? (bundle.unidad || 'Valor') : pctMes ? 'Porcentaje' : cumpleEv ? 'Cumplimiento'
       : tipo === 'evento' ? (bundle.etiqueta_no && bundle.etiqueta_no !== 'Fallida' ? 'Porcentaje ' + porcentajeDe(bundle) : 'Porcentaje de falla')
       : compuesto ? 'Cumplimiento del bundle entero' : deGrupo ? 'Cumplimiento' : 'Cumplimiento del bundle') +
     ' mes a mes, últimos 12 meses. La línea punteada es el objetivo.';
@@ -952,7 +961,8 @@ async function elegirBundle(clave){
 function pintar(){
   if(!bundle) return;
   if(bundle.tipo === 'evento')  return pintarEvento();
-  if(bundle.tipo === 'mensual') return bundle.calculo === 'porcentaje' ? pintarMensualPct() : pintarMensual();
+  if(bundle.tipo === 'mensual') return bundle.calculo === 'porcentaje' ? pintarMensualPct()
+    : bundle.calculo === 'razon' ? pintarRazon() : pintarMensual();
   if(bundle.tipo === 'compuesto') return pintarCompuesto();
   if(bundle.tipo === 'tasa') return pintarTasa();
   if(!bundle.propio) return pintarBundle();
@@ -1447,7 +1457,7 @@ function dibujarTendenciaTasa(serie, meta, formato = fmtTasa){
   const svg = $('tendencia');
   const W = 700, H = 210, mx = 36, my = 30;
   const valores = serie.map(s => s.r).filter(r => r !== null);
-  const tope = Math.max(meta * 1.5, 1, ...valores) * 1.15;
+  const tope = Math.max((meta || 0) * 1.5, 1, ...valores) * 1.15;
   const x = i => serie.length === 1 ? W/2 : mx + i * (W - mx*2) / (serie.length - 1);
   const y = v => H - my - (v / tope) * (H - my*2);
 
@@ -1456,8 +1466,10 @@ function dibujarTendenciaTasa(serie, meta, formato = fmtTasa){
     out += `<line class="eje" x1="${mx-6}" y1="${y(v)}" x2="${W-8}" y2="${y(v)}"></line>`;
     out += `<text class="etiqueta" x="0" y="${y(v)+4}">${v}</text>`;
   });
+  if(meta !== null && meta !== undefined){
   out += `<line class="meta" x1="${mx-6}" y1="${y(meta)}" x2="${W-8}" y2="${y(meta)}"></line>`;
   out += `<text class="etiqueta meta" x="${W-8}" y="${y(meta)-5}" text-anchor="end">meta: ${formato === fmtTasa ? textoMeta(meta) : 'menos de ' + formato(meta)}</text>`;
+  }
 
   // La línea se corta en los meses sin días cargados.
   const tramos = []; let tramo = [];
@@ -1758,6 +1770,71 @@ function juntarNumDen(rows){
 const expandir = filasMes => filasMes.flatMap(g =>
   Array.from({ length:g.den }, (_, i) => ({ periodo:g.periodo, servicio:g.servicio, higienizo: i < g.num })));
 
+/* ---------- Razón mensual (num / den, sin semáforo) ---------- */
+function juntarRazon(b, propios, fuente){
+  const m = new Map();
+  const g = (per, sec) => { const k = per + '|' + sec;
+    if(!m.has(k)) m.set(k, { periodo:per, servicio:sec, num:null, den:null }); return m.get(k); };
+  for(const r of propios){
+    if(r.item_clave === 'den') { const x = g(r.periodo, r.servicio); x.den = (x.den || 0) + Number(r.valor); }
+    if(r.item_clave === 'num' && !b.fuente_bundle) { const x = g(r.periodo, r.servicio); x.num = (x.num || 0) + Number(r.valor); }
+  }
+  if(b.fuente_bundle) for(const r of fuente){
+    const k = r.periodo + '|' + r.servicio;
+    if(m.has(k)) m.get(k).num = (m.get(k).num || 0) + Number(r.valor);
+  }
+  // Solo cuentan los meses-sector con los dos números (el denominador mayor que cero).
+  return [...m.values()].filter(x => x.num !== null && x.den > 0);
+}
+const fmtRazon = v => v === null || !isFinite(v) ? '—' : v.toLocaleString('es-AR', { maximumFractionDigits:1, minimumFractionDigits:1 });
+
+function pintarRazon(){
+  const desde = periodoDesde();
+  const s = $('fServicio').value;
+  const dentro = r => (!desde || r.periodo >= desde) && (!s || r.servicio === s);
+  const filasR = juntarRazon(bundle, mensuales.filter(dentro), fuenteRazon.filter(dentro));
+
+  ver('cargando', false);
+  ver('sinDatos', filasR.length === 0);
+  ver('contenido', filasR.length > 0);
+  if(!filasR.length) return;
+
+  const tNum = bundle.texto_num || (mensuales.find(m => m.item_clave === 'num') || {}).item_texto || 'Numerador';
+  const tDen = (mensuales.find(m => m.item_clave === 'den') || {}).item_texto || 'Denominador';
+  const suma = (lista, k) => lista.reduce((a, x) => a + x[k], 0);
+  const num = suma(filasR, 'num'), den = suma(filasR, 'den');
+  const meses = new Set(filasR.map(x => x.periodo));
+
+  $('adherencia').textContent = fmtRazon(num / den);
+  $('adherencia').className = '';
+  $('adherenciaDetalle').textContent = `${bundle.unidad || ''} · ${num.toLocaleString('es-AR')} ${minus(tNum)} ` +
+    `en ${meses.size} ${meses.size === 1 ? 'mes' : 'meses'}`;
+
+  const cabeza = primera => `<th>${primera}</th><th class="num">${tNum}</th><th class="num">${tDen}</th><th class="num">Razón</th>`;
+  const fila = (primera, n, d) => `<tr><td>${primera}</td><td class="num">${n.toLocaleString('es-AR')}</td>` +
+    `<td class="num">${d.toLocaleString('es-AR')}</td><td class="num"><b>${fmtRazon(n / d)}</b></td></tr>`;
+
+  // Mes a mes: la razón del mes es la suma de los numeradores sobre la suma de los denominadores.
+  const porMes = [...meses].sort().reverse().map(per => { const l = filasR.filter(x => x.periodo === per);
+    return { per, n: suma(l, 'num'), d: suma(l, 'den') }; });
+  $('subMeses').textContent = `${tNum} sobre ${minus(tDen)}, mes a mes` + (s ? ` en ${s}` : ', sumando los sectores');
+  $('cabezaMeses').innerHTML = cabeza('Mes');
+  $('tablaMeses').innerHTML = porMes.map(x => fila(nombreMes(x.per), x.n, x.d)).join('');
+
+  const sectores = [...new Set(filasR.map(x => x.servicio))].sort();
+  $('subSector').textContent = 'Cada sector en el período';
+  $('porSector').innerHTML = `<div style="overflow-x:auto"><table><thead><tr>${cabeza('Sector')}</tr></thead><tbody>` +
+    sectores.map(sec => { const l = filasR.filter(x => x.servicio === sec); return fila(sec, suma(l, 'num'), suma(l, 'den')); }).join('') +
+    `<tr><td><b>Total</b></td><td class="num"><b>${num.toLocaleString('es-AR')}</b></td><td class="num"><b>${den.toLocaleString('es-AR')}</b></td>` +
+    `<td class="num"><b>${fmtRazon(num / den)}</b></td></tr></tbody></table></div>`;
+
+  $('subTendencia').textContent = `${(bundle.unidad || 'Valor').charAt(0).toUpperCase() + (bundle.unidad || 'valor').slice(1)}, mes a mes.`;
+  dibujarTendenciaTasa(porMes.slice().reverse().slice(-12).map(x => ({ mes:x.per, r:x.n / x.d })), null, fmtRazon);
+
+  $('pieActualizado').textContent =
+    'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
 function pintarMensualPct(){
   const desde = periodoDesde();
   const s = $('fServicio').value;
@@ -1777,7 +1854,7 @@ function pintarMensualPct(){
   $('adherencia').textContent = fmt(global);
   $('adherencia').className = c;
   $('adherenciaDetalle').textContent = `${num.toLocaleString('es-AR')} de ${den.toLocaleString('es-AR')} · ` +
-    `${meses} ${meses === 1 ? 'mes' : 'meses'}` + (s ? '' : ` · ${new Set(filasMes.map(g => g.servicio)).size} sectores`);
+    `${meses} ${meses === 1 ? 'mes' : 'meses'}` + (s ? '' : (n => ` · ${n} ${n === 1 ? 'sector' : 'sectores'}`)(new Set(filasMes.map(g => g.servicio)).size));
   $('semaforo').className = 'semaforo ' + c;
   const tope = escalaPct(global);
   $('medidorRelleno').style.width = Math.min(100, global / tope * 100) + '%';
@@ -1785,10 +1862,12 @@ function pintarMensualPct(){
   $('marcaMeta').style.left = (META / tope * 100) + '%';
   $('textoMeta').style.left = (META / tope * 100) + '%';
   const menor = bundle.sentido === 'menor_mejor';
-  $('textoMeta').textContent = (menor ? 'máximo ' : 'objetivo ') + META + '%';
+  $('textoMeta').textContent = menor && Number(META) === 0 ? '' : (menor ? 'máximo ' : 'objetivo ') + META + '%';
   $('textoMeta').classList.toggle('derecha', META / tope * 100 < 35);
-  $('veredicto').textContent =
-    c === 'oro' ? (menor ? `Por debajo del ${UMBRAL_ORO}%: excelente.` : `¡Excelencia! ${UMBRAL_ORO}% o más.`)
+  $('marcaMeta').style.display = menor && Number(META) === 0 ? 'none' : '';
+  $('veredicto').textContent = menor && Number(META) === 0
+    ? (num === 0 ? 'En cero, como pide la meta.' : `${num} en el período: la meta es cero.`)
+    : c === 'oro' ? (menor ? `Por debajo del ${UMBRAL_ORO}%: excelente.` : `¡Excelencia! ${UMBRAL_ORO}% o más.`)
     : c === 'alto' ? (menor ? `Por debajo del máximo del ${META}%.` : `Por encima del objetivo del ${META}%.`)
     : c === 'medio' ? (menor ? `Por encima del máximo del ${META}%.` : `Por debajo del objetivo del ${META}%.`)
     : (menor ? `Supera el ${UMBRAL_MEDIO}%.` : `Por debajo del ${UMBRAL_MEDIO}%.`);
@@ -2014,6 +2093,13 @@ async function datosDe(b, forzar){
       .select('bundle,periodo,servicio,item_clave,item_texto,item_orden,valor')
       .eq('bundle', b.clave).order('periodo');
     d.mensuales = data || [];
+    // Razón con numerador de otro conteo (días de ARM por paciente toma los días de vaa).
+    if(b.fuente_bundle){
+      const { data: f } = await db.from('hdm_publico_mensual')
+        .select('periodo,servicio,item_clave,valor')
+        .eq('bundle', b.fuente_bundle).in('item_clave', b.fuente_items || []).order('periodo');
+      d.fuente = f || [];
+    }
   } else if(!b.propio){
     const [regs, items] = await Promise.all([
       bajarTodo('hdm_publico_registros',
@@ -2039,7 +2125,7 @@ async function actualizar(){
   if(b.tipo === 'tasa'){ tasaEventos = d.tasaEventos; tasaDenom = d.tasaDenom; tasaTipos = d.tasaTipos; }
   else if(b.tipo === 'compuesto'){ registros = d.registros; compuestos = d.compuestos; resultado = d.resultado; }
   else if(b.tipo === 'evento') eventos = d.eventos;
-  else if(b.tipo === 'mensual') mensuales = d.mensuales;
+  else if(b.tipo === 'mensual'){ mensuales = d.mensuales; fuenteRazon = d.fuente || []; }
   else if(!b.propio){ registros = d.registros; itemsRegistro = d.itemsRegistro; }
 
   llenarCamas(fuenteActual());
@@ -2053,10 +2139,11 @@ let filtroEstado = '';
 function areaDe(b){ return b.area || (b.propio ? 'Higiene de manos' : 'Otros indicadores'); }
 
 const TIPO_CHIP = b => b.propio ? 'Observación' : ({ compuesto:'Bundle', checklist:'Control',
-  evento: b.calculo === 'smr' ? 'Score' : 'Por caso', tasa:'Tasa', mensual: b.calculo === 'porcentaje' ? 'Mensual' : 'Conteo' })[b.tipo || 'checklist'] || '';
+  evento: b.calculo === 'smr' ? 'Score' : 'Por caso', tasa:'Tasa', mensual: b.calculo === 'porcentaje' || b.calculo === 'razon' ? 'Mensual' : 'Conteo' })[b.tipo || 'checklist'] || '';
 
 const ESTADO_TXT = { oro:'Excelencia', alto:'En meta', medio:'Atención', bajo:'Fuera de meta',
-                     sindatos:'Sin datos en el período', na:'No se mide en este sector', info:'Conteo mensual' };
+                     sindatos:'Sin datos en el período', na:'No se mide en este sector', info:'Conteo mensual',
+                     razon:'Razón mensual' };
 const grupoEstado = e => e === 'oro' || e === 'alto' ? 'ok' : e === 'medio' ? 'atencion' : e === 'bajo' ? 'fuera' : 'otros';
 
 // Corre una cuenta con los umbrales y el sentido de otro indicador, sin tocar el que está abierto.
@@ -2094,13 +2181,27 @@ function resumen(b, d){
     if(s && !b.propio && b.sectores && b.sectores.length && !b.sectores.includes(s))
       return { estado:'na', valor:'—', detalle:`No se mide en ${s}`, serie:[] };
 
+    if(t === 'mensual' && b.calculo === 'razon'){
+      const desde = periodoDesde();
+      const deSec = r => !s || r.servicio === s;
+      const todas = juntarRazon(b, (d.mensuales || []).filter(deSec), (d.fuente || []).filter(deSec));
+      const dentro = todas.filter(x => !desde || x.periodo >= desde);
+      const porMes = new Map();
+      todas.forEach(x => { const g = porMes.get(x.periodo) || { n:0, d:0 }; g.n += x.num; g.d += x.den; porMes.set(x.periodo, g); });
+      const serie = [...porMes.entries()].sort((a, c) => a[0].localeCompare(c[0])).slice(-6).map(([mes, g]) => ({ mes, v:g.n / g.d }));
+      if(!dentro.length) return { estado:'sindatos', valor:'—', detalle:'Sin meses cargados en el período', serie };
+      const n = dentro.reduce((a, x) => a + x.num, 0), dd = dentro.reduce((a, x) => a + x.den, 0);
+      const meses = new Set(dentro.map(x => x.periodo)).size;
+      return { estado:'razon', valor:fmtRazon(n / dd), unidad:b.unidad || '', serie,
+               detalle:`${n.toLocaleString('es-AR')} en total · ${meses} ${meses === 1 ? 'mes' : 'meses'}` };
+    }
     if(t === 'mensual' && b.calculo === 'porcentaje'){
       const desde = periodoDesde();
       const sec = juntarNumDen((d.mensuales || []).filter(m => !s || m.servicio === s));
       const dentro = sec.filter(g => !desde || g.periodo >= desde);
       const serie = seriePct(expandir(sec));
       const menor = b.sentido === 'menor_mejor';
-      const meta = menor ? `máximo ${META}%` : `objetivo ${META}%`;
+      const meta = menor ? (Number(META) === 0 ? 'meta: 0%' : `máximo ${META}%`) : `objetivo ${META}%`;
       if(!dentro.length) return { estado:'sindatos', valor:'—', detalle:'Sin meses cargados en el período', serie, meta };
       const num = dentro.reduce((a, g) => a + g.num, 0), den = dentro.reduce((a, g) => a + g.den, 0);
       const p = pct(num, den);
