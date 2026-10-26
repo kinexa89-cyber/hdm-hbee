@@ -928,7 +928,9 @@ async function elegirBundle(clave){
       : tipo === 'evento'
         ? 'Porcentaje de casos que terminaron en falla sobre el total registrado. Acá el número bueno es el bajo, así que el semáforo se lee al revés que en los demás indicadores.'
         : razon
-          ? 'Cociente del mes, cargado a mes vencido por cada sector. No lleva semáforo: sirve para ver cómo cambia mes a mes y entre sectores.' +
+          ? (bundle.sectores && bundle.sectores.length === 1 && bundle.fuente_bundle
+              ? 'Cociente del mes para todo el hospital: los días suman todos los sectores, los pacientes se cuentan una sola vez. No lleva semáforo.'
+              : 'Cociente del mes, cargado a mes vencido por cada sector. No lleva semáforo: sirve para ver cómo cambia mes a mes y entre sectores.') +
             (bundle.descripcion ? ' ' + bundle.descripcion : '')
         : pctMes
           ? (bundle.sentido === 'menor_mejor'
@@ -1771,6 +1773,7 @@ const expandir = filasMes => filasMes.flatMap(g =>
   Array.from({ length:g.den }, (_, i) => ({ periodo:g.periodo, servicio:g.servicio, higienizo: i < g.num })));
 
 /* ---------- Razón mensual (num / den, sin semáforo) ---------- */
+const TODO_SERVICIO = 'Todo el servicio';
 function juntarRazon(b, propios, fuente){
   const m = new Map();
   const g = (per, sec) => { const k = per + '|' + sec;
@@ -1779,12 +1782,27 @@ function juntarRazon(b, propios, fuente){
     if(r.item_clave === 'den') { const x = g(r.periodo, r.servicio); x.den = (x.den || 0) + Number(r.valor); }
     if(r.item_clave === 'num' && !b.fuente_bundle) { const x = g(r.periodo, r.servicio); x.num = (x.num || 0) + Number(r.valor); }
   }
-  if(b.fuente_bundle) for(const r of fuente){
-    const k = r.periodo + '|' + r.servicio;
-    if(m.has(k)) m.get(k).num = (m.get(k).num || 0) + Number(r.valor);
+  if(b.fuente_bundle){
+    // Cargado para "Todo el servicio" (pacientes en ARM del hospital): el numerador es la suma
+    // de todos los sectores del mes, y solo cuenta si están cargados todos (si no, daría bajo).
+    const sectFuente = (catalogo.find(c => c.clave === b.fuente_bundle) || {}).sectores || [];
+    for(const x of m.values()){
+      if(x.servicio !== TODO_SERVICIO) continue;
+      const delMes = fuente.filter(r => r.periodo === x.periodo);
+      const cargados = new Set(delMes.map(r => r.servicio));
+      if(sectFuente.every(sec => cargados.has(sec)))
+        x.num = delMes.reduce((a, r) => a + Number(r.valor), 0);
+      else x.falta = sectFuente.filter(sec => !cargados.has(sec));
+    }
+    for(const r of fuente){
+      const k = r.periodo + '|' + r.servicio;
+      if(m.has(k)) m.get(k).num = (m.get(k).num || 0) + Number(r.valor);
+    }
   }
   // Solo cuentan los meses-sector con los dos números (el denominador mayor que cero).
-  return [...m.values()].filter(x => x.num !== null && x.den > 0);
+  const listas = [...m.values()].filter(x => x.num !== null && x.den > 0);
+  listas.pendientes = [...m.values()].filter(x => x.falta && x.den > 0);
+  return listas;
 }
 const fmtRazon = v => v === null || !isFinite(v) ? '—' : v.toLocaleString('es-AR', { maximumFractionDigits:1, minimumFractionDigits:1 });
 
@@ -1792,7 +1810,7 @@ function pintarRazon(){
   const desde = periodoDesde();
   const s = $('fServicio').value;
   const dentro = r => (!desde || r.periodo >= desde) && (!s || r.servicio === s);
-  const filasR = juntarRazon(bundle, mensuales.filter(dentro), fuenteRazon.filter(dentro));
+  const filasR = juntarRazon(bundle, mensuales.filter(dentro), fuenteRazon.filter(r => !desde || r.periodo >= desde));
 
   ver('cargando', false);
   ver('sinDatos', filasR.length === 0);
@@ -1817,7 +1835,10 @@ function pintarRazon(){
   // Mes a mes: la razón del mes es la suma de los numeradores sobre la suma de los denominadores.
   const porMes = [...meses].sort().reverse().map(per => { const l = filasR.filter(x => x.periodo === per);
     return { per, n: suma(l, 'num'), d: suma(l, 'den') }; });
-  $('subMeses').textContent = `${tNum} sobre ${minus(tDen)}, mes a mes` + (s ? ` en ${s}` : ', sumando los sectores');
+  $('subMeses').textContent = `${tNum} sobre ${minus(tDen)}, mes a mes` +
+    (bundle.sectores && bundle.sectores.length === 1 ? '' : s ? ` en ${s}` : ', sumando los sectores') +
+    (filasR.pendientes.length ? '. Fuera del cálculo hasta que se carguen los días: ' +
+      filasR.pendientes.map(x => `${nombreMes(x.periodo)} (falta ${x.falta.join(', ')})`).join('; ') : '');
   $('cabezaMeses').innerHTML = cabeza('Mes');
   $('tablaMeses').innerHTML = porMes.map(x => fila(nombreMes(x.per), x.n, x.d)).join('');
 
@@ -2184,7 +2205,7 @@ function resumen(b, d){
     if(t === 'mensual' && b.calculo === 'razon'){
       const desde = periodoDesde();
       const deSec = r => !s || r.servicio === s;
-      const todas = juntarRazon(b, (d.mensuales || []).filter(deSec), (d.fuente || []).filter(deSec));
+      const todas = juntarRazon(b, (d.mensuales || []).filter(deSec), d.fuente || []);
       const dentro = todas.filter(x => !desde || x.periodo >= desde);
       const porMes = new Map();
       todas.forEach(x => { const g = porMes.get(x.periodo) || { n:0, d:0 }; g.n += x.num; g.d += x.den; porMes.set(x.periodo, g); });
