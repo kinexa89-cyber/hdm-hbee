@@ -56,7 +56,40 @@ main{max-width:1180px;margin:0 auto;padding:20px}
   padding:9px 12px;border:1px solid var(--linea);border-radius:9px;background:var(--superficie);
   font-family:inherit;font-size:.85rem;color:var(--tinta);flex:1 1 150px;min-width:0
 }
-.filtros select:focus{outline:3px solid rgba(27,127,184,.35);outline-offset:1px}
+.filtros select:focus,.filtros input:focus{outline:3px solid rgba(27,127,184,.35);outline-offset:1px}
+.filtros .periodo{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 100%;align-items:center;min-width:0}
+.filtros input[type=date]{padding:8px 10px;border:1px solid var(--linea);border-radius:9px;background:var(--superficie);
+  font-family:inherit;font-size:.85rem;color:var(--tinta);min-width:0;flex:1 1 120px}
+.filtros .fechas{display:flex;gap:6px;align-items:center;flex:1 1 260px;min-width:0}
+.filtros .fechas span{font-size:.8rem;color:var(--tinta-suave)}
+.interruptor{display:flex;align-items:center;gap:8px;flex:1 1 100%;font-size:.85rem;color:var(--tinta);cursor:pointer;user-select:none}
+.interruptor input{width:18px;height:18px;margin:0;accent-color:var(--azul-700)}
+#cajaComparar{padding:10px;border:1px dashed var(--azul-500);border-radius:10px;background:var(--azul-050)}
+#cajaComparar .rotuloB{flex:1 1 100%;font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--azul-700)}
+.textoPeriodo{flex:1 1 100%;margin:0;font-size:.78rem;color:var(--tinta-suave)}
+.lateral .filtros input[type=date]{width:100%}
+
+/* ---------- comparación de períodos ---------- */
+.comparar{display:grid;grid-template-columns:1fr;gap:12px;align-items:stretch}
+@media (min-width:640px){ .comparar{grid-template-columns:1fr auto 1fr} }
+.lado{border:1px solid var(--linea);border-radius:12px;padding:14px;background:var(--superficie-2);
+  display:flex;flex-direction:column;gap:3px;min-width:0}
+.lado .etq{font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta-suave)}
+.lado .rango{font-size:.82rem;font-weight:500}
+.lado strong{font-size:2.2rem;font-weight:700;line-height:1.05;margin-top:6px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.lado strong.oro{color:var(--oro)} .lado strong.alto{color:var(--verde)} .lado strong.medio{color:var(--ambar)}
+.lado strong.bajo{color:var(--rojo)} .lado strong.sindatos,.lado strong.na{color:var(--tinta-suave)}
+.lado .u{font-size:.75rem;color:var(--tinta-suave)}
+.lado .det{font-size:.78rem;color:var(--tinta-suave);margin-top:4px}
+.dif{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 14px;
+  border-radius:12px;font-weight:700;font-size:1.1rem;text-align:center;font-variant-numeric:tabular-nums}
+.dif small{font-size:.72rem;font-weight:500}
+.dif.mejor{color:var(--verde);background:var(--verde-050)} .dif.peor{color:var(--rojo);background:var(--rojo-050)}
+.dif.neutro,.dif.igual,.dif.nada{color:var(--azul-700);background:var(--azul-050)}
+.cambio{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cambio.mejor{color:var(--verde)} .cambio.peor{color:var(--rojo)} .cambio.neutro,.cambio.igual{color:var(--azul-700)}
+.tiCompara{font-size:.78rem;color:var(--tinta-suave)}
+.tiCompara b{color:var(--tinta);font-weight:600}
 
 /* ---------- hero con semáforo ---------- */
 .hero{background:var(--superficie);border:1px solid var(--linea);border-radius:14px;padding:22px;margin-bottom:18px}
@@ -296,21 +329,41 @@ svg.spark circle.medio{fill:var(--ambar)} svg.spark circle.bajo{fill:var(--rojo)
   </div>
   <div id="lugarFiltrosDetalle">
   <div class="filtros" id="filtros">
-    <select id="fPeriodo">
-      <option value="mes">Mes en curso</option>
-      <option value="90" selected>Últimos 3 meses</option>
-      <option value="anio">Año en curso</option>
-      <option value="todo">Todo el registro</option>
-    </select>
+    <div class="periodo">
+      <select id="fPeriodo" aria-label="Período"></select>
+      <select id="fMes" class="oculto" aria-label="Mes"></select>
+      <select id="fAnio" class="oculto" aria-label="Año"></select>
+      <span id="fFechas" class="fechas oculto">
+        <input type="date" id="fDesde" aria-label="Desde"><span>a</span><input type="date" id="fHasta" aria-label="Hasta">
+      </span>
+    </div>
+    <label class="interruptor"><input type="checkbox" id="fComparar"> Comparar con otro período</label>
+    <div class="periodo oculto" id="cajaComparar">
+      <span class="rotuloB">Comparar con</span>
+      <select id="fPeriodoB" aria-label="Período para comparar"></select>
+      <select id="fMesB" class="oculto" aria-label="Mes para comparar"></select>
+      <select id="fAnioB" class="oculto" aria-label="Año para comparar"></select>
+      <span id="fFechasB" class="fechas oculto">
+        <input type="date" id="fDesdeB" aria-label="Desde"><span>a</span><input type="date" id="fHastaB" aria-label="Hasta">
+      </span>
+    </div>
     <select id="fEstamento"><option value="">Todos los servicios</option></select>
     <select id="fServicio"><option value="">Todos los sectores</option></select>
     <select id="fTurno"><option value="">Todos los turnos</option></select>
     <select id="fCama"><option value="">Todas las camas</option></select>
+    <p class="textoPeriodo" id="textoPeriodo"></p>
   </div>
   </div>
 
   <div id="cargando" class="vacio">Cargando datos…</div>
   <div id="sinDatos" class="vacio oculto">No hay observaciones registradas con esos filtros.</div>
+
+  <!-- Comparación de dos períodos (solo si se pide) -->
+  <section class="panel oculto" id="panelComparar">
+    <h2>Comparación de períodos</h2>
+    <p class="sub" id="subComparar">Mismo indicador y mismos filtros, en dos períodos distintos.</p>
+    <div id="cuerpoComparar"></div>
+  </section>
 
   <div id="contenido" class="oculto">
 
@@ -628,21 +681,14 @@ function fmt(p){ return p === null ? '—' : p.toFixed(1).replace('.', ',') + '%
 
 /* ---------- Filtros ---------- */
 function filtrar(rows){
-  const per = $('fPeriodo').value;
-  const hoy = new Date();
-  let desde = null;
-
-  if(per === 'mes')  desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-  if(per === 'anio') desde = new Date(hoy.getFullYear(), 0, 1);
-  if(per === '90'){ desde = new Date(hoy); desde.setDate(desde.getDate() - 90); }
-
-  const iso = desde ? new Date(desde.getTime() - desde.getTimezoneOffset()*60000).toISOString().slice(0,10) : null;
-  const s = $('fServicio').value, t = $('fTurno').value, cm = $('fCama').value;
+  const R = rangoActivo();
+  const s = sectorActivo(), t = $('fTurno').value, cm = $('fCama').value;
   // El servicio de la persona observada solo existe en higiene de manos.
   const e = bundle && !bundle.propio ? '' : $('fEstamento').value;
 
   return rows.filter(r =>
-    (!iso || r.fecha >= iso) &&
+    (!R.desde || r.fecha >= R.desde) &&
+    (!R.hasta || r.fecha <= R.hasta) &&
     (!cm || r.cama === cm) &&
     (!s || r.servicio === s) &&
     (!t || r.turno === t) &&
@@ -674,7 +720,7 @@ function ordenCama(a, b){
 }
 
 function llenarCamas(rows){
-  const s = $('fServicio').value;
+  const s = sectorActivo();
   const elegida = $('fCama').value;
   const camas = [...new Set(rows
     .filter(r => r.cama && (!s || r.servicio === s))
@@ -962,6 +1008,12 @@ async function elegirBundle(clave){
 
 function pintar(){
   if(!bundle) return;
+  actualizarTextoPeriodo();
+  pintarPeriodo();
+  pintarComparacion();
+}
+
+function pintarPeriodo(){
   if(bundle.tipo === 'evento')  return pintarEvento();
   if(bundle.tipo === 'mensual') return bundle.calculo === 'porcentaje' ? pintarMensualPct()
     : bundle.calculo === 'razon' ? pintarRazon() : pintarMensual();
@@ -1050,7 +1102,7 @@ function pintarCamas(ops){
   if(porCama.length){
     // Sin sector elegido la lista se vuelve interminable, así que se muestran
     // las puntas y se invita a filtrar por sector para ver el detalle.
-    const recortar = !$('fServicio').value && porCama.length > 12;
+    const recortar = !sectorActivo() && porCama.length > 12;
     const lista = recortar ? porCama.slice(0, 6).concat(porCama.slice(-6)) : porCama;
     $('subCamas').textContent = recortar
       ? `Las 6 camas con mejor resultado y las 6 con peor, de ${porCama.length}. Elegí un sector para ver todas sus camas.`
@@ -1276,13 +1328,13 @@ const fmtTasa = r => r === null ? '—' : r.toFixed(1).replace('.', ',');
 const fmtMeta = m => Number(m).toLocaleString('es-AR', { maximumFractionDigits:1 });
 
 function pintarTasa(){
-  const desde = periodoDesde();
-  const s = $('fServicio').value;
+  const enMeses = filtroMeses();
+  const s = sectorActivo();
   const sectores = s ? [s]
     : (bundle.sectores && bundle.sectores.length ? bundle.sectores
        : [...new Set(tasaDenom.map(d => d.servicio))]);
-  const evs  = tasaEventos.filter(e => (!desde || e.periodo >= desde) && sectores.includes(e.servicio));
-  const dens = tasaDenom.filter(d => (!desde || d.periodo >= desde) && sectores.includes(d.servicio));
+  const evs  = tasaEventos.filter(e => enMeses(e.periodo) && sectores.includes(e.servicio));
+  const dens = tasaDenom.filter(d => enMeses(d.periodo) && sectores.includes(d.servicio));
 
   ver('cargando', false);
   const hay = evs.length || dens.length;
@@ -1402,11 +1454,11 @@ function pintarResultado(completas){
   ver('panelResultado', true);
 
   const def = resultado.def;
-  const desde = periodoDesde();
-  const s = $('fServicio').value;
+  const enMeses = filtroMeses();
+  const s = sectorActivo();
   const sectores = s ? [s]
     : (def.sectores && def.sectores.length ? def.sectores : [...new Set(resultado.dens.map(d => d.servicio))]);
-  const dentro = x => (!desde || x.periodo >= desde) && sectores.includes(x.servicio);
+  const dentro = x => enMeses(x.periodo) && sectores.includes(x.servicio);
   const R = calcularTasa(resultado.evs.filter(dentro), resultado.dens.filter(dentro), sectores);
 
   const porCada = Number(def.por_cada) || 1000;
@@ -1807,10 +1859,10 @@ function juntarRazon(b, propios, fuente){
 const fmtRazon = v => v === null || !isFinite(v) ? '—' : v.toLocaleString('es-AR', { maximumFractionDigits:1, minimumFractionDigits:1 });
 
 function pintarRazon(){
-  const desde = periodoDesde();
-  const s = $('fServicio').value;
-  const dentro = r => (!desde || r.periodo >= desde) && (!s || r.servicio === s);
-  const filasR = juntarRazon(bundle, mensuales.filter(dentro), fuenteRazon.filter(r => !desde || r.periodo >= desde));
+  const enMeses = filtroMeses();
+  const s = sectorActivo();
+  const dentro = r => enMeses(r.periodo) && (!s || r.servicio === s);
+  const filasR = juntarRazon(bundle, mensuales.filter(dentro), fuenteRazon.filter(r => enMeses(r.periodo)));
 
   ver('cargando', false);
   ver('sinDatos', filasR.length === 0);
@@ -1857,9 +1909,9 @@ function pintarRazon(){
 }
 
 function pintarMensualPct(){
-  const desde = periodoDesde();
-  const s = $('fServicio').value;
-  const filasMes = juntarNumDen(mensuales.filter(m => (!desde || m.periodo >= desde) && (!s || m.servicio === s)));
+  const enMeses = filtroMeses();
+  const s = sectorActivo();
+  const filasMes = juntarNumDen(mensuales.filter(m => enMeses(m.periodo) && (!s || m.servicio === s)));
 
   ver('cargando', false);
   ver('sinDatos', filasMes.length === 0);
@@ -1918,10 +1970,10 @@ function pintarMensualPct(){
 }
 
 function pintarMensual(){
-  const desde = periodoDesde();
-  const s = $('fServicio').value;
+  const enMeses = filtroMeses();
+  const s = sectorActivo();
   const datos = mensuales.filter(m =>
-    (!desde || m.periodo >= desde) && (!s || m.servicio === s));
+    enMeses(m.periodo) && (!s || m.servicio === s));
 
   ver('cargando', false);
   ver('sinDatos', datos.length === 0);
@@ -1984,15 +2036,285 @@ function pintarMensual(){
     'Actualizado ' + new Date().toLocaleString('es-AR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
-// El mismo filtro de período, pero en meses: un conteo mensual no tiene día.
-function periodoDesde(){
-  const per = $('fPeriodo').value;
+/* ================= Períodos =================
+   Cada opción del selector se traduce a un rango:
+     desde / hasta        fechas (AAAA-MM-DD) para lo que se carga por día
+     mesDesde / mesHasta  meses (AAAA-MM) para lo que se carga por mes (conteos, tasas)
+   null en un extremo = sin límite de ese lado. */
+const pad2 = n => String(n).padStart(2, '0');
+const isoDe = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const mesDe = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+const fechaDe = iso => { const [a, m, d] = iso.split('-').map(Number); return new Date(a, m - 1, d); };
+const correrMes = (per, k) => { const [a, m] = per.split('-').map(Number); return mesDe(new Date(a, m - 1 + k, 1)); };
+const mesesEntre = (a, b) => { const [ya, ma] = a.split('-').map(Number), [yb, mb] = b.split('-').map(Number);
+  return (yb - ya) * 12 + (mb - ma) + 1; };
+const finDeMes = per => { const [a, m] = per.split('-').map(Number); return isoDe(new Date(a, m, 0)); };
+
+const OPCIONES_PERIODO = `
+  <optgroup label="Días">
+    <option value="7d">Última semana</option>
+    <option value="14d">Últimas 2 semanas</option>
+    <option value="30d">Últimos 30 días</option>
+  </optgroup>
+  <optgroup label="Meses">
+    <option value="mes">Mes en curso</option>
+    <option value="mesant">Mes anterior</option>
+    <option value="3m">Últimos 3 meses</option>
+    <option value="6m">Últimos 6 meses</option>
+    <option value="12m">Últimos 12 meses</option>
+  </optgroup>
+  <optgroup label="Años">
+    <option value="anio">Año en curso</option>
+    <option value="anioant">Año anterior</option>
+  </optgroup>
+  <optgroup label="Elegir">
+    <option value="mesesp">Un mes en particular…</option>
+    <option value="anioesp">Un año en particular…</option>
+    <option value="fechas">Entre dos fechas…</option>
+  </optgroup>
+  <option value="todo">Todo el registro</option>`;
+
+function rangoDe(op, x){
   const hoy = new Date();
-  const mes = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-  if(per === 'mes')  return mes(hoy);
-  if(per === 'anio') return `${hoy.getFullYear()}-01`;
-  if(per === '90')   return mes(new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1));
-  return null;
+  const h = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const r = (() => {
+    const dias = n => ({ desde: isoDe(new Date(h.getFullYear(), h.getMonth(), h.getDate() - (n - 1))), hasta: isoDe(h) });
+    // Últimos N meses: los días corren hasta hoy; en meses, el actual y los N-1 anteriores.
+    const meses = n => ({ desde: isoDe(new Date(h.getFullYear(), h.getMonth() - n, h.getDate() + 1)), hasta: isoDe(h),
+      mesDesde: correrMes(mesDe(h), -(n - 1)), mesHasta: mesDe(h), paso: n });
+    const mesEntero = per => ({ desde: per + '-01', hasta: finDeMes(per), calendario: true });
+    const anioEntero = a => ({ desde: `${a}-01-01`, hasta: `${a}-12-31`, calendario: true });
+    switch(op){
+      case '7d':  return dias(7);
+      case '14d': return dias(14);
+      case '30d': return dias(30);
+      case 'mes': return { desde: mesDe(h) + '-01', hasta: isoDe(h), calendario: true };
+      case 'mesant': return mesEntero(correrMes(mesDe(h), -1));
+      case '3m':  return meses(3);
+      case '6m':  return meses(6);
+      case '12m': return meses(12);
+      case 'anio': return { desde: `${h.getFullYear()}-01-01`, hasta: isoDe(h), calendario: true,
+                            mesHasta: `${h.getFullYear()}-12` };
+      case 'anioant': return anioEntero(h.getFullYear() - 1);
+      case 'mesesp': return x.mes ? mesEntero(x.mes) : mesEntero(mesDe(h));
+      case 'anioesp': return anioEntero(x.anio || h.getFullYear());
+      case 'fechas': {
+        let d = x.desde || null, a = x.hasta || null;
+        if(d && a && d > a) [d, a] = [a, d];
+        return { desde: d, hasta: a };
+      }
+      default: return { desde: null, hasta: null };   // todo el registro
+    }
+  })();
+  if(r.mesDesde === undefined) r.mesDesde = r.desde ? r.desde.slice(0, 7) : null;
+  if(r.mesHasta === undefined) r.mesHasta = r.hasta ? r.hasta.slice(0, 7) : null;
+  return r;
+}
+
+// El período inmediatamente anterior, del mismo largo.
+function anteriorDe(A){
+  if(!A || !A.desde || !A.hasta) return null;
+  if(A.calendario){
+    const n = mesesEntre(A.mesDesde, A.mesHasta);
+    const md = correrMes(A.mesDesde, -n), mh = correrMes(A.mesHasta, -n);
+    return { desde: md + '-01', hasta: finDeMes(mh), mesDesde: md, mesHasta: mh, calendario: true };
+  }
+  const largo = Math.round((fechaDe(A.hasta) - fechaDe(A.desde)) / 86400000) + 1;
+  const h = fechaDe(A.desde); h.setDate(h.getDate() - 1);
+  const d = new Date(h.getFullYear(), h.getMonth(), h.getDate() - (largo - 1));
+  const r = { desde: isoDe(d), hasta: isoDe(h) };
+  if(A.paso){ r.mesDesde = correrMes(A.mesDesde, -A.paso); r.mesHasta = correrMes(A.mesHasta, -A.paso); r.paso = A.paso; }
+  else { r.mesDesde = r.desde.slice(0, 7); r.mesHasta = r.hasta.slice(0, 7); }
+  return r;
+}
+
+// Las mismas fechas, un año antes.
+function anioAntesDe(A){
+  if(!A || (!A.desde && !A.hasta)) return null;
+  const menosUno = iso => iso ? (Number(iso.slice(0, 4)) - 1) + iso.slice(4) : null;
+  const r = { ...A, desde: menosUno(A.desde), hasta: menosUno(A.hasta),
+              mesDesde: menosUno(A.mesDesde), mesHasta: menosUno(A.mesHasta) };
+  if(r.hasta && r.hasta.endsWith('-02-29')) r.hasta = r.hasta.slice(0, 8) + '28';
+  return r;
+}
+
+function leerRango(suf){
+  const op = $('fPeriodo' + suf).value;
+  if(op === 'anterior')   return anteriorDe(leerRango(''));
+  if(op === 'anioPasado') return anioAntesDe(leerRango(''));
+  return rangoDe(op, { mes: $('fMes' + suf).value, anio: $('fAnio' + suf).value,
+                       desde: $('fDesde' + suf).value, hasta: $('fHasta' + suf).value });
+}
+
+// El período que manda en las cuentas. Para comparar se fuerza otro un rato.
+let RANGO_FORZADO = null;
+let SECTOR_FORZADO = null;
+const rangoActivo = () => RANGO_FORZADO || leerRango('');
+const sectorActivo = () => SECTOR_FORZADO !== null ? SECTOR_FORZADO : $('fServicio').value;
+const comparando = () => $('fComparar').checked;
+function conRango(r, fn){ const a = RANGO_FORZADO; RANGO_FORZADO = r; try { return fn(); } finally { RANGO_FORZADO = a; } }
+function conSector(s, fn){ const a = SECTOR_FORZADO; SECTOR_FORZADO = s; try { return fn(); } finally { SECTOR_FORZADO = a; } }
+// Para lo que se carga por mes: ¿el mes cae dentro del período?
+function filtroMeses(){
+  const r = rangoActivo();
+  return per => (!r.mesDesde || per >= r.mesDesde) && (!r.mesHasta || per <= r.mesHasta);
+}
+function periodoDesde(){ return rangoActivo().mesDesde; }
+
+function textoRango(r){
+  if(!r) return '—';
+  if(!r.desde && !r.hasta) return 'todo el registro';
+  const MC = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const f = (iso, conAnio) => { const [a, m, d] = iso.split('-').map(Number);
+    return `${d} ${MC[m - 1]}` + (conAnio ? ` ${a}` : ''); };
+  if(!r.desde) return 'hasta el ' + f(r.hasta, true);
+  if(!r.hasta) return 'desde el ' + f(r.desde, true);
+  if(r.desde === r.hasta) return f(r.desde, true);
+  if(r.calendario && r.desde.endsWith('-01-01') && r.hasta.endsWith('-12-31') && r.desde.slice(0, 4) === r.hasta.slice(0, 4))
+    return 'año ' + r.desde.slice(0, 4);
+  if(r.calendario && r.mesDesde === r.mesHasta && r.desde.endsWith('-01') && r.hasta === finDeMes(r.mesHasta))
+    return nombreMes(r.mesDesde);
+  return f(r.desde, r.desde.slice(0, 4) !== r.hasta.slice(0, 4)) + ' – ' + f(r.hasta, true);
+}
+const textoMeses = r => !r.mesDesde && !r.mesHasta ? 'todos'
+  : r.mesDesde === r.mesHasta ? nombreMes(r.mesDesde)
+  : `${r.mesDesde ? nombreMes(r.mesDesde) : 'el inicio'} a ${r.mesHasta ? nombreMes(r.mesHasta) : 'hoy'}`;
+
+function armarPeriodos(){
+  const hoy = new Date();
+  $('fPeriodo').innerHTML = OPCIONES_PERIODO;
+  $('fPeriodo').value = '3m';
+  $('fPeriodoB').innerHTML = '<option value="anterior">El período anterior, del mismo largo</option>' +
+    '<option value="anioPasado">Las mismas fechas del año pasado</option>' + OPCIONES_PERIODO;
+  $('fPeriodoB').value = 'anterior';
+  // Meses: los últimos 36. Años: los últimos 5.
+  const meses = Array.from({ length: 36 }, (_, i) => mesDe(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)));
+  const anios = Array.from({ length: 5 }, (_, i) => hoy.getFullYear() - i);
+  ['', 'B'].forEach((suf, k) => {
+    $('fMes' + suf).innerHTML = meses.map(m => `<option value="${m}">${nombreMes(m)}</option>`).join('');
+    $('fMes' + suf).value = meses[k + 1];   // A: mes anterior; B: el de antes
+    $('fAnio' + suf).innerHTML = anios.map(a => `<option value="${a}">${a}</option>`).join('');
+    $('fAnio' + suf).value = String(anios[k]);
+    $('fDesde' + suf).max = $('fHasta' + suf).max = isoDe(hoy);
+  });
+}
+
+function mostrarExtras(suf){
+  const op = $('fPeriodo' + suf).value;
+  ver('fMes' + suf, op === 'mesesp');
+  ver('fAnio' + suf, op === 'anioesp');
+  ver('fFechas' + suf, op === 'fechas');
+  // Al elegir "entre dos fechas" se propone el último mes, para no arrancar vacío.
+  if(op === 'fechas' && !$('fDesde' + suf).value && !$('fHasta' + suf).value){
+    const h = new Date();
+    $('fHasta' + suf).value = isoDe(h);
+    $('fDesde' + suf).value = isoDe(new Date(h.getFullYear(), h.getMonth() - 1, h.getDate() + 1));
+  }
+}
+
+function alCambiarPeriodo(){
+  mostrarExtras(''); mostrarExtras('B');
+  ver('cajaComparar', comparando());
+  if(bundle) pintar(); else recalcularInicio();
+}
+
+function actualizarTextoPeriodo(){
+  const A = leerRango('');
+  let t = (comparando() ? 'Período: ' : 'Mostrando ') + textoRango(A);
+  if(comparando()){
+    const B = leerRango('B');
+    t += ' · Comparado con: ' + (B ? textoRango(B) : 'elegí un período con fechas para tener un “anterior”');
+  }
+  const porMes = bundle && (bundle.tipo === 'mensual' || bundle.tipo === 'tasa' || bundle.tasa_resultado);
+  if(porMes && (A.mesDesde || A.mesHasta)) t += ` · Datos mensuales: ${textoMeses(A)}`;
+  $('textoPeriodo').textContent = t + '.';
+}
+
+/* ---------- Comparación ---------- */
+// Diferencia entre el período elegido (a) y el comparado (c), con su lectura: mejoró, empeoró o neutro.
+function diferencia(b, a, c){
+  if(!a || !c || a.num === null || a.num === undefined || c.num === null || c.num === undefined
+     || !isFinite(a.num) || !isFinite(c.num)) return null;
+  const t = b.tipo || 'checklist';
+  const conteo = t === 'mensual' && b.calculo !== 'porcentaje' && b.calculo !== 'razon';
+  const neutro = t === 'mensual' && b.calculo !== 'porcentaje';          // conteo y razón no tienen semáforo
+  const menor = b.sentido === 'menor_mejor' || t === 'tasa' || b.calculo === 'smr';
+  const esPct = !neutro && t !== 'tasa' && b.calculo !== 'smr';
+  const dec = b.calculo === 'smr' ? 2 : conteo ? 0 : 1;
+  const d = a.num - c.num;
+  const igual = Math.abs(d) < Math.pow(10, -dec) / 2;
+  const abs = Math.abs(d).toLocaleString('es-AR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  let texto = igual ? 'Sin cambios' : `${d > 0 ? '▲' : '▼'} ${abs}${esPct ? ' pts' : ''}`;
+  if(conteo && !igual && c.num) texto += ` (${d > 0 ? '+' : '−'}${Math.abs(Math.round(d / c.num * 100))}%)`;
+  const cls = igual ? 'igual' : neutro ? 'neutro' : ((d > 0) !== menor ? 'mejor' : 'peor');
+  const palabra = { igual: 'igual que antes', neutro: d > 0 ? 'subió' : 'bajó', mejor: 'mejoró', peor: 'empeoró' }[cls];
+  return { texto, cls, palabra };
+}
+
+function resumenB(b, d){
+  if(!comparando()) return null;
+  const B = leerRango('B');
+  return B ? conRango(B, () => resumen(b, d)) : null;
+}
+
+function lineaComparacion(b, r){
+  if(!comparando() || r.estado === 'na') return '';
+  const rB = resumenesB.get(b.clave);
+  if(!rB) return '<div class="tiCompara">Sin período para comparar</div>';
+  const dif = diferencia(b, r, rB);
+  return `<div class="tiCompara">Antes <b>${rB.valor}</b>` +
+    (dif ? ` · <span class="cambio ${dif.cls}">${dif.texto}</span>` : ' · sin datos para comparar') + '</div>';
+}
+
+function pintarComparacion(){
+  const on = comparando() && !!bundle;
+  ver('panelComparar', on);
+  if(!on) return;
+  const c = cache.get(bundle.clave);
+  if(!c) return;
+  const b = bundle, d = c.d;
+  const A = leerRango(''), B = leerRango('B');
+  if(!B){
+    $('cuerpoComparar').innerHTML = '<p class="sub">Con “Todo el registro” no hay un período anterior. ' +
+      'Elegí arriba un período con fechas, o elegí a mano con qué comparar.</p>';
+    return;
+  }
+  const rA = conRango(A, () => resumen(b, d)), rB = conRango(B, () => resumen(b, d));
+  const dif = diferencia(b, rA, rB);
+  const lado = (etq, r, rg) => `<div class="lado">
+      <span class="etq">${etq}</span><span class="rango">${textoRango(rg)}</span>
+      <strong class="${r.estado}">${r.valor}</strong>${r.unidad ? `<span class="u">${r.unidad}</span>` : ''}
+      <span class="det">${r.detalle || ''}</span></div>`;
+
+  let html = `<div class="comparar">${lado('Período elegido', rA, A)}
+    <div class="dif ${dif ? dif.cls : 'nada'}">${dif ? dif.texto : '—'}<small>${dif ? dif.palabra : 'falta un período con datos'}</small></div>
+    ${lado('Comparado con', rB, B)}</div>`;
+
+  // Sector por sector, solo cuando se miran todos.
+  if(!sectorActivo()){
+    const sectores = b.sectores && b.sectores.length ? b.sectores
+      : [...$('fServicio').options].map(o => o.value).filter(Boolean);
+    const filasSec = sectores.map(sec => {
+      const a = conSector(sec, () => conRango(A, () => resumen(b, d)));
+      const z = conSector(sec, () => conRango(B, () => resumen(b, d)));
+      const vacio = r => r.estado === 'sindatos' || r.estado === 'na';
+      if(vacio(a) && vacio(z)) return '';
+      const df = diferencia(b, a, z);
+      return `<tr><td>${sec}</td><td class="num pct ${a.estado}">${a.valor}</td><td class="num pct ${z.estado}">${z.valor}</td>
+        <td class="num">${df ? `<span class="cambio ${df.cls}">${df.texto}</span>` : '—'}</td></tr>`;
+    }).filter(Boolean);
+    if(filasSec.length > 1) html += `<div style="overflow-x:auto;margin-top:16px"><table style="min-width:360px">
+      <thead><tr><th>Sector</th><th class="num">Período elegido</th><th class="num">Comparado con</th><th class="num">Diferencia</th></tr></thead>
+      <tbody>${filasSec.join('')}</tbody></table></div>`;
+  }
+
+  const t = b.tipo || 'checklist';
+  const nota = t === 'mensual' && b.calculo !== 'porcentaje' && b.calculo !== 'razon'
+    ? 'Es un conteo: si los dos períodos no tienen la misma cantidad de meses, la diferencia refleja también eso.'
+    : (t === 'mensual' || t === 'tasa') ? 'Los datos mensuales entran por mes completo: se toman los meses que caen dentro de cada período.'
+    : 'En porcentajes, la diferencia está en puntos (pts): de 70% a 75% son 5 pts.';
+  html += `<p class="notaRanking">${nota} Con pocos casos en alguno de los dos períodos, las diferencias pueden ser azar.</p>`;
+  $('cuerpoComparar').innerHTML = html;
 }
 
 function nombreMes(periodo){
@@ -2026,7 +2348,8 @@ async function llenarFiltros(){
 }
 
 ['fTurno','fEstamento','fCama'].forEach(id => $(id).addEventListener('change', pintar));
-$('fPeriodo').addEventListener('change', () => bundle ? pintar() : recalcularInicio());
+['fPeriodo','fMes','fAnio','fDesde','fHasta','fComparar','fPeriodoB','fMesB','fAnioB','fDesdeB','fHastaB']
+  .forEach(id => $(id).addEventListener('change', alCambiarPeriodo));
 // El sector manda sobre la lista de camas, así que primero se rehace esa lista.
 $('fServicio').addEventListener('change', () => {
   if(!bundle) return recalcularInicio();
@@ -2155,6 +2478,7 @@ async function actualizar(){
 
 /* ================= Portada ================= */
 const resumenes = new Map();   // clave -> lo que muestra su tarjeta
+const resumenesB = new Map();  // lo mismo, en el período con el que se compara
 let filtroEstado = '';
 
 function areaDe(b){ return b.area || (b.propio ? 'Higiene de manos' : 'Otros indicadores'); }
@@ -2176,7 +2500,7 @@ function conIndicador(b, fn){
   finally { ({ bundle, UMBRAL_MEDIO, META, UMBRAL_ORO } = antes); }
 }
 
-const soloSector = rows => { const s = $('fServicio').value; return rows.filter(r => !s || r.servicio === s); };
+const soloSector = rows => { const s = sectorActivo(); return rows.filter(r => !s || r.servicio === s); };
 
 function opsDe(b, rows){
   const t = b.tipo || 'checklist';
@@ -2198,28 +2522,28 @@ function seriePct(ops){
 function resumen(b, d){
   return conIndicador(b, () => {
     const t = b.tipo || 'checklist';
-    const s = $('fServicio').value;
+    const s = sectorActivo();
     if(s && !b.propio && b.sectores && b.sectores.length && !b.sectores.includes(s))
       return { estado:'na', valor:'—', detalle:`No se mide en ${s}`, serie:[] };
 
     if(t === 'mensual' && b.calculo === 'razon'){
-      const desde = periodoDesde();
+      const enMeses = filtroMeses();
       const deSec = r => !s || r.servicio === s;
       const todas = juntarRazon(b, (d.mensuales || []).filter(deSec), d.fuente || []);
-      const dentro = todas.filter(x => !desde || x.periodo >= desde);
+      const dentro = todas.filter(x => enMeses(x.periodo));
       const porMes = new Map();
       todas.forEach(x => { const g = porMes.get(x.periodo) || { n:0, d:0 }; g.n += x.num; g.d += x.den; porMes.set(x.periodo, g); });
       const serie = [...porMes.entries()].sort((a, c) => a[0].localeCompare(c[0])).slice(-6).map(([mes, g]) => ({ mes, v:g.n / g.d }));
       if(!dentro.length) return { estado:'sindatos', valor:'—', detalle:'Sin meses cargados en el período', serie };
       const n = dentro.reduce((a, x) => a + x.num, 0), dd = dentro.reduce((a, x) => a + x.den, 0);
       const meses = new Set(dentro.map(x => x.periodo)).size;
-      return { estado:'razon', valor:fmtRazon(n / dd), unidad:b.unidad || '', serie,
+      return { estado:'razon', valor:fmtRazon(n / dd), num:n / dd, unidad:b.unidad || '', serie,
                detalle:`${n.toLocaleString('es-AR')} en total · ${meses} ${meses === 1 ? 'mes' : 'meses'}` };
     }
     if(t === 'mensual' && b.calculo === 'porcentaje'){
-      const desde = periodoDesde();
+      const enMeses = filtroMeses();
       const sec = juntarNumDen((d.mensuales || []).filter(m => !s || m.servicio === s));
-      const dentro = sec.filter(g => !desde || g.periodo >= desde);
+      const dentro = sec.filter(g => enMeses(g.periodo));
       const serie = seriePct(expandir(sec));
       const menor = b.sentido === 'menor_mejor';
       const meta = menor ? (Number(META) === 0 ? 'meta: 0%' : `máximo ${META}%`) : `objetivo ${META}%`;
@@ -2227,31 +2551,31 @@ function resumen(b, d){
       const num = dentro.reduce((a, g) => a + g.num, 0), den = dentro.reduce((a, g) => a + g.den, 0);
       const p = pct(num, den);
       const meses = new Set(dentro.map(g => g.periodo)).size;
-      return { estado:clase(p), valor:fmt(p), meta,
+      return { estado:clase(p), valor:fmt(p), num:p, meta,
                detalle:`${num.toLocaleString('es-AR')} de ${den.toLocaleString('es-AR')} · ${meses} ${meses === 1 ? 'mes' : 'meses'}`, serie };
     }
     if(t === 'mensual'){
-      const desde = periodoDesde();
+      const enMeses = filtroMeses();
       const sec = (d.mensuales || []).filter(m => !s || m.servicio === s);
-      const dentro = sec.filter(m => !desde || m.periodo >= desde);
+      const dentro = sec.filter(m => enMeses(m.periodo));
       const total = dentro.reduce((a, m) => a + Number(m.valor), 0);
       const porMes = new Map();
       sec.forEach(m => porMes.set(m.periodo, (porMes.get(m.periodo) || 0) + Number(m.valor)));
       const serie = [...porMes.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-6).map(([mes, v]) => ({ mes, v }));
       const meses = new Set(dentro.map(m => m.periodo)).size;
       if(!dentro.length) return { estado:'sindatos', valor:'—', detalle:'Sin meses cargados en el período', serie };
-      return { estado:'info', valor:total.toLocaleString('es-AR'), unidad:b.unidad || '',
+      return { estado:'info', valor:total.toLocaleString('es-AR'), num:total, unidad:b.unidad || '',
                detalle:`${meses} ${meses === 1 ? 'mes cargado' : 'meses cargados'}`, serie };
     }
 
     if(t === 'tasa'){
       const sectores = s ? [s] : (b.sectores && b.sectores.length ? b.sectores
                        : [...new Set((d.tasaDenom || []).map(x => x.servicio))]);
-      const desde = periodoDesde();
+      const enMeses = filtroMeses();
       const evS = (d.tasaEventos || []).filter(e => sectores.includes(e.servicio));
       const denS = (d.tasaDenom || []).filter(x => sectores.includes(x.servicio));
-      const R = calcularTasa(evS.filter(e => !desde || e.periodo >= desde),
-                             denS.filter(x => !desde || x.periodo >= desde), sectores);
+      const R = calcularTasa(evS.filter(e => enMeses(e.periodo)),
+                             denS.filter(x => enMeses(x.periodo)), sectores);
       const porCada = Number(b.por_cada) || 1000;
       const r = R.total.dias > 0 ? R.total.n / R.total.dias * porCada : null;
       const serie = calcularTasa(evS, denS, sectores).meses
@@ -2259,7 +2583,7 @@ function resumen(b, d){
       const unidad = b.unidad || 'días';
       if(r === null) return { estado:'sindatos', valor:'—', detalle:`Faltan los ${unidad} del período`, serie,
                               meta:`meta: ${textoMeta(b.meta)}` };
-      return { estado:claseTasa(r, Number(b.meta)), valor:fmtTasa(r), unidad:`por ${porCada.toLocaleString('es-AR')} ${unidad}`,
+      return { estado:claseTasa(r, Number(b.meta)), valor:fmtTasa(r), num:r, unidad:`por ${porCada.toLocaleString('es-AR')} ${unidad}`,
                detalle:`${R.total.n} ${R.total.n === 1 ? 'evento' : 'eventos'} en ${R.total.dias.toLocaleString('es-AR')} ${unidad}`,
                serie, meta:`meta: ${textoMeta(b.meta)}` };
     }
@@ -2271,7 +2595,7 @@ function resumen(b, d){
         .map(mes => ({ mes, v: calcularSMR(sec.filter(x => x.periodo === mes)).smr }));
       const meta = `meta: menos de ${fmtSMR(META)}`;
       if(R.smr === null) return { estado:'sindatos', valor:'—', detalle:'Sin egresos con SAPS II en el período', serie:porMes, meta };
-      return { estado:claseSMR(R.smr), valor:fmtSMR(R.smr), unidad:'SMR', meta, serie:porMes,
+      return { estado:claseSMR(R.smr), valor:fmtSMR(R.smr), num:R.smr, unidad:'SMR', meta, serie:porMes,
                detalle:`${R.muertes} de ${R.n} fallecidos · se esperaban ${R.esperadas.toFixed(1).replace('.', ',')}` };
     }
     const base = filasDe(b, d);
@@ -2292,7 +2616,7 @@ function resumen(b, d){
       : t === 'compuesto' ? `${si} de ${n} ${n === 1 ? 'cama-día completa' : 'camas-día completas'}`
       : t === 'evento' ? `${si} de ${n} ${n === 1 ? 'caso' : 'casos'} · ${menor ? (b.etiqueta_no ? cuentaTxt(b) : 'fallida') : minus(b.etiqueta_si || 'cumple')}`
       : `${si} de ${n} controles cumplidos`;
-    return { estado:clase(p), valor:fmt(p), detalle, serie, meta };
+    return { estado:clase(p), valor:fmt(p), num:p, detalle, serie, meta };
   });
 }
 
@@ -2321,11 +2645,13 @@ function tarjeta(b){
       <div class="tiValor"><strong class="${r.estado}">${r.valor}</strong>${r.unidad ? `<span>${r.unidad}</span>` : ''}</div>
       <div class="tiEstado ${r.estado}"><i></i>${ESTADO_TXT[r.estado] || ''}${r.meta && r.estado !== 'na' ? ` <span style="font-weight:400;color:var(--tinta-suave)">· ${r.meta}</span>` : ''}</div>
       <div class="tiDetalle">${r.detalle || ''}</div>
+      ${lineaComparacion(b, r)}
       <div class="tiPie">${spark(r.serie, r.estado)}<small>Ver detalle →</small></div>
     </a>`;
 }
 
 function pintarInicio(){
+  actualizarTextoPeriodo();
   const conteo = { todos:catalogo.length, fuera:0, atencion:0, ok:0, otros:0 };
   catalogo.forEach(b => { const r = resumenes.get(b.clave); if(r) conteo[grupoEstado(r.estado)]++; });
   const listos = resumenes.size >= catalogo.length;
@@ -2363,7 +2689,7 @@ function pintarInicio(){
 function recalcularInicio(){
   for(const b of catalogo){
     const c = cache.get(b.clave);
-    if(c) resumenes.set(b.clave, resumen(b, c.d));
+    if(c){ resumenes.set(b.clave, resumen(b, c.d)); resumenesB.set(b.clave, resumenB(b, c.d)); }
   }
   pintarInicio();
 }
@@ -2375,6 +2701,7 @@ async function cargarInicio(forzar){
     try {
       const d = await datosDe(b, forzar);
       resumenes.set(b.clave, resumen(b, d));
+      resumenesB.set(b.clave, resumenB(b, d));
     } catch(e){
       console.error(b.clave, e);
       resumenes.set(b.clave, { estado:'sindatos', valor:'—', detalle:'No se pudieron leer los datos', serie:[] });
@@ -2423,6 +2750,7 @@ window.addEventListener('hashchange', () => {
 });
 
 (async () => {
+  armarPeriodos();
   await llenarFiltros();
   await cargarCatalogo();
   await rutear();
